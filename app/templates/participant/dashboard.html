@@ -1,0 +1,651 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard - EventHub{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+    <div class="welcome-content">
+        <h1>Welcome back, {{ current_user.name }}! 👋</h1>
+        <p>Discover and join amazing events</p>
+    </div>
+    <a href="{{ url_for('participant.browse_events') }}" class="btn btn-primary">
+        <i class="fas fa-search"></i> Browse Events
+    </a>
+</div>
+
+<!-- Dashboard Stats -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">My Tickets</span>
+            <h3 class="stat-number">{{ stats.total_registrations }}</h3>
+            <span class="stat-trend">
+                <i class="fas fa-calendar"></i> {{ stats.upcoming_events }} upcoming
+            </span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon purple">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Attended</span>
+            <h3 class="stat-number">{{ stats.attended_events }}</h3>
+            <span class="stat-trend">
+                <i class="fas fa-check"></i> Events completed
+            </span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Recommendations</span>
+            <h3 class="stat-number">{{ stats.recommended_count }}</h3>
+            <span class="stat-trend">
+                <i class="fas fa-lightbulb"></i> For you
+            </span>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon orange">
+            <i class="fas fa-bookmark"></i>
+        </div>
+        <div class="stat-info">
+            <span class="stat-label">Saved Events</span>
+            <h3 class="stat-number">{{ stats.saved_events }}</h3>
+            <span class="stat-trend">
+                <i class="fas fa-heart"></i> Favorites
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Upcoming Events -->
+<div class="section-card">
+    <div class="section-header">
+        <h3><i class="fas fa-calendar-alt"></i> My Upcoming Events</h3>
+        <a href="{{ url_for('participant.my_registrations') }}" class="view-all-link">
+            View all <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    {% if upcoming_registrations %}
+    <div class="events-grid">
+        {% for registration in upcoming_registrations[:4] %}
+        <div class="event-card">
+            <div class="event-image">
+    {% if registration.event.image %}
+        <div style="position:absolute;inset:-8px;background-image:url('{{ url_for('static', filename='uploads/events/' + registration.event.image) }}');background-size:cover;background-position:center;filter:blur(14px) brightness(0.3);transform:scale(1.15);z-index:0;"></div>
+        <img src="{{ url_for('static', filename='uploads/events/' + registration.event.image) }}"
+             alt="{{ registration.event.title }}">
+    {% else %}
+        <div class="img-fallback img-fallback-blue"></div>
+    {% endif %}
+    <span class="event-category">{{ registration.event.category|title }}</span>
+</div>
+            <div class="event-details">
+                <h4>{{ registration.event.title }}</h4>
+                <div class="event-meta">
+                    <span><i class="fas fa-calendar"></i> {{ registration.event.event_date.strftime('%b %d, %Y') }}</span>
+                    <span><i class="fas fa-clock"></i> {{ registration.event.event_date.strftime('%I:%M %p') }}</span>
+                </div>
+                <div class="event-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> {{ registration.event.location }}</span>
+                </div>
+                <div class="event-footer">
+                    <span class="badge badge-success">
+                        <i class="fas fa-check-circle"></i> Registered
+                    </span>
+                    <a href="{{ url_for('participant.view_ticket', registration_id=registration.id) }}" class="btn-sm btn-outline">
+    View Ticket
+</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times"></i>
+        <h3>No upcoming events</h3>
+        <p>Browse events and register to see them here</p>
+        <a href="{{ url_for('participant.browse_events') }}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Browse Events
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recommended Events -->
+<div class="section-card">
+    <div class="section-header">
+        <h3><i class="fas fa-magic"></i> Recommended For You</h3>
+        <a href="{{ url_for('participant.recommendations') }}" class="view-all-link">
+            View all <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    {% if recommended_events %}
+    <div class="events-grid">
+        {% for event in recommended_events[:4] %}
+        <div class="event-card">
+            <div class="event-image">
+    {% if event.image %}
+        <div style="position:absolute;inset:-8px;background-image:url('{{ url_for('static', filename='uploads/events/' + event.image) }}');background-size:cover;background-position:center;filter:blur(14px) brightness(0.3);transform:scale(1.15);z-index:0;"></div>
+        <img src="{{ url_for('static', filename='uploads/events/' + event.image) }}"
+             alt="{{ event.title }}">
+    {% else %}
+        <div class="img-fallback img-fallback-pink"></div>
+    {% endif %}
+    <span class="event-category">{{ event.category|title }}</span>
+</div>
+            <div class="event-details">
+                <h4>{{ event.title }}</h4>
+                <div class="event-meta">
+                    <span><i class="fas fa-calendar"></i> {{ event.event_date.strftime('%b %d, %Y') }}</span>
+                    <span><i class="fas fa-users"></i> {{ event.available_seats }} seats left</span>
+                </div>
+                <div class="event-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> {{ event.location }}</span>
+                </div>
+                <div class="event-footer">
+                    {% if event.is_paid %}
+                    <span class="event-price">₹{{ event.price|round|int }}</span>
+                    {% else %}
+                    <span class="badge badge-free">Free</span>
+                    {% endif %}
+                    <a href="{{ url_for('participant.event_details', event_id=event.id) }}" class="btn-sm btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-mini">
+        <i class="fas fa-star"></i>
+        <p>No recommendations yet. Register for more events to get personalized suggestions!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+    <div class="actions-grid">
+        <a href="{{ url_for('participant.browse_events') }}" class="action-card">
+            <i class="fas fa-search"></i>
+            <span>Browse Events</span>
+        </a>
+        <a href="{{ url_for('participant.my_registrations') }}" class="action-card">
+            <i class="fas fa-ticket-alt"></i>
+            <span>My Tickets</span>
+        </a>
+        <a href="{{ url_for('participant.recommendations') }}" class="action-card">
+            <i class="fas fa-star"></i>
+            <span>Recommendations</span>
+        </a>
+        <a href="{{ url_for('auth.profile') }}" class="action-card">
+            <i class="fas fa-user-cog"></i>
+            <span>Settings</span>
+        </a>
+    </div>
+</div>
+
+<style>
+/* Hide hamburger on desktop */
+@media (min-width: 769px) {
+    .top-nav-left .sidebar-toggle {
+        display: none !important;
+    }
+}
+
+/* Welcome Banner */
+.welcome-banner {
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(77, 166, 255, 0.25);
+}
+
+.welcome-content h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: white;
+}
+
+.welcome-content p {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+/* Dashboard Stats */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.stat-icon.blue {
+    background: rgba(77, 166, 255, 0.12);
+    color: #4da6ff;
+}
+
+.stat-icon.purple {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+}
+
+.stat-icon.green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.stat-icon.orange {
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin: 0 0 4px 0;
+}
+
+.stat-trend {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stat-trend i {
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+/* Section Card */
+.section-card {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.section-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header h3 i {
+    color: var(--accent);
+    font-size: 18px;
+}
+
+.view-all-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s ease;
+}
+
+.view-all-link:hover {
+    opacity: 0.8;
+}
+
+/* Events Grid */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.event-card {
+    background: var(--bg-base);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.event-image {
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+    background: #0a0f1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.img-fallback,
+.event-image > div:not(.event-category) {
+    position: absolute; inset: 0;
+}
+.event-image img {
+    position: relative; z-index: 1;
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto;
+    object-fit: contain; display: block;
+}
+.event-image .event-category {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    color: white; letter-spacing: 0.5px;
+}
+.img-fallback {
+    width: 100%;
+    height: 100%;
+}
+.img-fallback-blue { background: linear-gradient(135deg, #667eea, #764ba2); }
+.img-fallback-pink { background: linear-gradient(135deg, #f093fb, #f5576c); }
+
+.event-category {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+.event-details {
+    padding: 20px;
+}
+
+.event-details h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.event-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.event-meta span {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.event-meta i {
+    width: 14px;
+    color: var(--accent);
+    font-size: 12px;
+}
+
+.event-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.event-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge-success {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-free {
+    background: rgba(77, 166, 255, 0.12);
+    color: #4da6ff;
+    border: 1px solid rgba(77, 166, 255, 0.3);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.btn-outline:hover {
+    background: var(--bg-elevated-2);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--text-tertiary);
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin: 0 0 24px 0;
+}
+
+.empty-state-mini {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-state-mini i {
+    font-size: 48px;
+    color: var(--text-tertiary);
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-mini p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Quick Actions */
+.quick-actions {
+    margin-bottom: 30px;
+}
+
+.quick-actions h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quick-actions h3 i {
+    color: var(--accent);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.action-card {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.action-card i {
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+}
+
+.action-card span {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .welcome-banner {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+        padding: 30px 20px;
+    }
+    
+    .welcome-content h1 {
+        font-size: 24px;
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .events-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}

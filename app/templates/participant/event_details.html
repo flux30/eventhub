@@ -1,0 +1,722 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - EventHub{% endblock %}
+
+{% block content %}
+<div class="event-details-container">
+
+    <!-- Status Banner (Feature 3 server-side + Feature 6 real-time updates) -->
+    {% if event.status == 'cancelled' %}
+    <div id="statusBanner" class="status-banner cancelled" style="display:flex;">
+        <i class="fas fa-times-circle"></i>
+        <span>
+            <strong>This event has been cancelled.</strong>
+            {% if event.status_reason %} — {{ event.status_reason }}{% endif %}
+        </span>
+    </div>
+    {% elif event.status == 'postponed' %}
+    <div id="statusBanner" class="status-banner postponed" style="display:flex;">
+        <i class="fas fa-calendar-times"></i>
+        <span>
+            <strong>This event has been postponed.</strong>
+            {% if event.postponed_to %}
+                New date: {{ event.postponed_to.strftime('%A, %B %d, %Y at %I:%M %p') }}.
+            {% endif %}
+            {% if event.status_reason %} {{ event.status_reason }}{% endif %}
+        </span>
+    </div>
+    {% else %}
+    <!-- Empty banner — Feature 6 JS may populate this if status changes live -->
+    <div id="statusBanner" class="status-banner" style="display:none;"></div>
+    {% endif %}
+
+    <!-- Event Hero — Feature 5: prefer banner_url (Firebase CDN), fall back to local -->
+    {% set hero_bg = event.banner_url if event.banner_url else
+        (url_for('static', filename='uploads/events/' + event.image) if event.image else None) %}
+    <div class="event-hero"
+         {% if hero_bg %}style="--hero-bg: url('{{ hero_bg }}')"{% endif %}>
+
+        {% if hero_bg %}
+            <img src="{{ hero_bg }}" alt="{{ event.title }}" class="event-hero-img">
+        {% else %}
+            <div class="event-img-placeholder"></div>
+        {% endif %}
+
+        <div class="event-hero-overlay">
+            <div class="event-hero-content">
+                <span class="event-category-badge">{{ event.category }}</span>
+                <h1>{{ event.title }}</h1>
+                <div class="event-hero-meta">
+                    <span><i class="fas fa-user"></i> {{ event.organizer.name }}</span>
+                    <span id="registeredCount">
+                        <i class="fas fa-users"></i>
+                        {{ event.max_participants - (event.available_seats or event.max_participants) }} registered
+                    </span>
+                    {% if event.is_paid %}
+                        <span><i class="fas fa-rupee-sign"></i> ₹{{ event.price|round|int }}</span>
+                    {% else %}
+                        <span class="badge badge-success">FREE</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="event-details-body">
+        <div class="event-main-content">
+
+            <!-- About -->
+            <div class="card">
+                <h2>About This Event</h2>
+                <p>{{ event.description }}</p>
+            </div>
+
+            <!-- Event Details -->
+            <div class="card">
+                <h2>Event Details</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <strong>Date</strong>
+                            <p>{{ event.event_date.strftime('%A, %d %B %Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <strong>Time</strong>
+                            <p>{{ event.event_date.strftime('%I:%M %p') }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Location</strong>
+                            <p>{{ event.location }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-users"></i>
+                        <div>
+                            <strong>Capacity</strong>
+                            <p>{{ event.max_participants }} participants</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ratings -->
+            {% if rating_data and rating_data.count > 0 %}
+            <div class="card">
+                <h2>Ratings & Reviews</h2>
+                <div class="rating-summary">
+                    <div class="rating-score">
+                        <span class="score">{{ rating_data.average }}</span>
+                        <div class="stars">
+                            {% for i in range(5) %}
+                                <i class="fas fa-star {% if i < rating_data.average|int %}active{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <p>{{ rating_data.count }} reviews</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="event-sidebar">
+            <div class="card sticky-card">
+
+                <!-- Price -->
+                <div class="sidebar-price">
+                    {% if event.is_paid %}
+                        <span class="price">₹{{ event.price|round|int }}</span>
+                        <span class="text-muted">per person</span>
+                    {% else %}
+                        <span class="price free">FREE</span>
+                    {% endif %}
+                </div>
+
+                <!-- Capacity Bar
+                     Feature 6: data-* attributes are read by realtime_seats.js.
+                     IDs capFill / seatsText / capPct are updated by the JS in real-time.
+                -->
+                {% set seats = event.available_seats or 0 %}
+                {% set pct = (((event.max_participants - seats) / event.max_participants) * 100)|int
+                             if event.max_participants > 0 else 0 %}
+                <div class="sidebar-seats"
+                     data-event-id="{{ event.id }}"
+                     data-max-participants="{{ event.max_participants }}"
+                     data-allow-waitlist="{{ 'true' if event.allow_waitlist else 'false' }}">
+
+                    <div class="progress-bar">
+                        <div id="capFill" class="progress-fill"
+                             style="width: {{ pct }}%;
+                                    background: {% if pct >= 90 %}linear-gradient(90deg,#ef4444,#dc2626)
+                                                {% elif pct >= 60 %}linear-gradient(90deg,#f59e0b,#d97706)
+                                                {% else %}linear-gradient(90deg,#4da6ff,#a78bfa)
+                                                {% endif %};">
+                        </div>
+                    </div>
+
+                    <div class="seats-row">
+                        {% if seats > 0 %}
+                            <span id="seatsText" class="seats-ok">{{ seats }} seats left</span>
+                        {% else %}
+                            <span id="seatsText" class="seats-full">Event Full</span>
+                        {% endif %}
+                        <span id="capPct" class="cap-pct">{{ pct }}% filled</span>
+                    </div>
+
+                    <!-- Live indicator — Feature 6 -->
+                    <div class="live-indicator-row">
+                        <span id="liveIndicator" class="live-dot polling"
+                              title="Connecting to real-time updates...">○ Syncing</span>
+                    </div>
+                </div>
+
+                <!-- Register / Waitlist / Full / Already-registered buttons -->
+                <div class="sidebar-actions">
+                    {% if registration %}
+                        {% if registration.status == 'confirmed' %}
+                        <div class="registration-status">
+                            <i class="fas fa-check-circle"></i>
+                            <span>You're registered!</span>
+                        </div>
+                        <a href="{{ url_for('participant.view_ticket', registration_id=registration.id) }}"
+                           class="btn btn-outline">
+                            <i class="fas fa-qrcode"></i> View Ticket
+                        </a>
+                        {% if not registration.attended %}
+                        <form method="POST"
+                              action="{{ url_for('participant.cancel_registration', registration_id=registration.id) }}"
+                              onsubmit="return confirm('Are you sure you want to cancel your registration?')">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Cancel Registration
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% elif registration.status == 'waitlist' %}
+                        <div class="registration-status waitlist">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>You're on the waitlist</span>
+                        </div>
+                        <p class="waitlist-note">
+                            <i class="fas fa-info-circle"></i>
+                            You'll be notified by email if a spot opens up.
+                        </p>
+
+                        {% elif registration.status == 'cancelled' %}
+                        <form id="registerForm" method="POST"
+                              action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-redo"></i> Register Again
+                            </button>
+                        </form>
+                        {% endif %}
+
+                    {% elif event.available_seats and event.available_seats > 0 %}
+                    <!-- Seats available — show Register button -->
+                    <form id="registerForm" method="POST"
+                          action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-ticket-alt"></i> Register Now
+                        </button>
+                    </form>
+
+                    {% elif event.allow_waitlist %}
+                    <!-- Full but waitlist enabled -->
+                    <form id="waitlistForm" method="POST"
+                          action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                        <button type="submit" class="btn btn-waitlist btn-lg">
+                            <i class="fas fa-list"></i> Join Waitlist
+                        </button>
+                    </form>
+
+                    {% else %}
+                    <!-- Full, no waitlist -->
+                    <button id="eventFullBtn" class="btn btn-primary btn-lg" disabled>
+                        <i class="fas fa-times-circle"></i> Event Full
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Deadline -->
+                <div class="sidebar-info">
+                    <p>
+                        <i class="fas fa-calendar-times"></i>
+                        Registration closes:
+                        {{ event.registration_deadline.strftime('%d %b, %I:%M %p') }}
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature 6: Firebase client config — read by realtime_seats.js -->
+<script id="firebaseConfig" type="application/json">
+{
+  "apiKey":            "{{ firebase_config.apiKey }}",
+  "authDomain":        "{{ firebase_config.authDomain }}",
+  "projectId":         "{{ firebase_config.projectId }}",
+  "storageBucket":     "{{ firebase_config.storageBucket }}",
+  "messagingSenderId": "{{ firebase_config.messagingSenderId }}",
+  "appId":             "{{ firebase_config.appId }}"
+}
+</script>
+
+<!-- Feature 6: Firebase JS SDK (compat) + real-time seat listener -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="{{ url_for('static', filename='js/realtime_seats.js') }}"></script>
+
+<style>
+/* ── Reset ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+img { max-width: 100%; display: block; }
+
+/* ── Container ───────────────────────────────────────────────────── */
+.event-details-container {
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* ── Status Banner ───────────────────────────────────────────────── */
+.status-banner {
+    padding: 14px 24px;
+    margin: 16px 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.5;
+    animation: slideDown 0.3s ease;
+}
+.status-banner i { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.status-banner strong { display: block; }
+/* Feature 3 + Feature 6: JS sets class="status-banner cancelled/postponed" */
+.status-banner.cancelled {
+    background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(220,38,38,0.1));
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+}
+.status-banner.postponed {
+    background: linear-gradient(135deg, rgba(251,146,60,0.15), rgba(217,119,6,0.1));
+    border: 1px solid rgba(251,146,60,0.3);
+    color: #fdba74;
+}
+.status-banner.sold-out {
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(79,70,229,0.1));
+    border: 1px solid rgba(99,102,241,0.3);
+    color: #a5b4fc;
+}
+@keyframes slideDown {
+    from { transform: translateY(-16px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+.event-hero {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    background: #060b14;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.event-hero::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background-image: var(--hero-bg);
+    background-size: cover;
+    background-position: center;
+    filter: blur(28px) brightness(0.3) saturate(1.4);
+    transform: scale(1.1);
+    z-index: 0;
+}
+.event-hero-img {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+.event-img-placeholder {
+    position: relative;
+    z-index: 1;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1040 0%, #0d2340 50%, #0a1628 100%);
+}
+.event-hero-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 30%,
+        rgba(0,0,0,0.5) 60%,
+        rgba(0,0,0,0.92) 100%
+    );
+    display: flex;
+    align-items: flex-end;
+}
+.event-hero-content {
+    position: relative;
+    z-index: 3;
+    padding: 32px 36px;
+    width: 100%;
+}
+.event-category-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    background: rgba(77,166,255,0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(77,166,255,0.3);
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #4da6ff;
+    margin-bottom: 12px;
+}
+.event-hero-content h1 {
+    font-size: 36px;
+    font-weight: 800;
+    margin: 0 0 14px 0;
+    line-height: 1.2;
+    word-break: break-word;
+    color: white;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.event-hero-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+    color: rgba(255,255,255,0.8);
+    font-size: 14px;
+    font-weight: 500;
+}
+.event-hero-meta span { display: flex; align-items: center; gap: 7px; }
+.event-hero-meta i { color: #4da6ff; font-size: 13px; }
+
+/* ── Body Grid ───────────────────────────────────────────────────── */
+.event-details-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
+    padding: 32px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: start;
+}
+.event-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+.card {
+    background: var(--bg-elevated);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+}
+.card > p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-size: 15px;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* ── Details Grid ────────────────────────────────────────────────── */
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 4px;
+}
+.detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+    transition: border-color 0.2s;
+}
+.detail-item:hover { border-color: rgba(77,166,255,0.15); }
+.detail-item i {
+    font-size: 16px;
+    color: #4da6ff;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(77,166,255,0.1);
+    border-radius: 9px;
+    flex-shrink: 0;
+}
+.detail-item strong {
+    display: block;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+.detail-item p {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ── Ratings ─────────────────────────────────────────────────────── */
+.rating-summary { margin-top: 8px; }
+.rating-score { text-align: center; }
+.rating-score .score {
+    font-size: 52px;
+    font-weight: 800;
+    color: #4da6ff;
+    letter-spacing: -2px;
+    line-height: 1;
+    display: block;
+    margin-bottom: 10px;
+}
+.stars { margin: 10px 0 8px; display: flex; justify-content: center; gap: 4px; }
+.stars i { font-size: 18px; color: rgba(255,255,255,0.1); }
+.stars i.active { color: #fbbf24; }
+.rating-score p { color: var(--text-secondary); font-size: 13px; margin: 0; }
+
+/* ── Sticky Sidebar ──────────────────────────────────────────────── */
+.event-sidebar { min-width: 0; }
+.sticky-card {
+    position: sticky;
+    top: 80px;
+    background: var(--bg-elevated);
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    padding: 0;        /* sections handle their own padding */
+}
+
+/* Sidebar — Price */
+.sidebar-price {
+    text-align: center;
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-price .price {
+    display: block;
+    font-size: 44px;
+    font-weight: 800;
+    color: #4da6ff;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.sidebar-price .price.free { color: #10b981; }
+.sidebar-price .text-muted { font-size: 13px; color: var(--text-tertiary); }
+
+/* Sidebar — Capacity */
+.sidebar-seats {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #4da6ff, #a78bfa);
+    transition: width 0.4s ease, background 0.4s ease;
+}
+
+/* Seats row: text + pct side by side */
+.seats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+.seats-ok   { color: #10b981; font-weight: 700; }
+.seats-full { color: #ef4444; font-weight: 700; }
+.cap-pct    { color: var(--text-tertiary); }
+
+/* ── Live indicator ──────────────────────────────────────────────── */
+.live-indicator-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+.live-dot {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    cursor: default;
+    transition: all 0.3s;
+}
+.live-dot.live {
+    color: #10b981;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+}
+.live-dot.polling {
+    color: var(--text-tertiary);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Sidebar — Actions */
+.sidebar-actions {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    width: 100%;
+}
+.btn-primary { background: #4da6ff; color: white; }
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(77,166,255,0.4);
+}
+.btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: grayscale(0.4);
+}
+.btn-waitlist {
+    background: rgba(251,146,60,0.12);
+    color: #fb923c;
+    border: 1px solid rgba(251,146,60,0.3);
+}
+.btn-waitlist:hover { background: rgba(251,146,60,0.22); }
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.12);
+}
+.btn-outline:hover { border-color: #4da6ff; color: #4da6ff; }
+.btn-danger {
+    background: rgba(239,68,68,0.08);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.2);
+}
+.btn-danger:hover { background: rgba(239,68,68,0.15); }
+.btn-lg { padding: 15px 24px; font-size: 16px; }
+
+/* Registered / Waitlist status pills */
+.registration-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 13px 20px;
+    background: rgba(16,185,129,0.1);
+    border-radius: 10px;
+    color: #10b981;
+    font-weight: 700;
+    font-size: 14px;
+    border: 1px solid rgba(16,185,129,0.2);
+}
+.registration-status.waitlist {
+    background: rgba(251,146,60,0.1);
+    color: #fb923c;
+    border-color: rgba(251,146,60,0.2);
+}
+.registration-status i { font-size: 16px; }
+.waitlist-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin: 0;
+    line-height: 1.5;
+}
+.waitlist-note i { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+
+/* Sidebar — Info */
+.sidebar-info { padding: 14px 24px 20px; }
+.sidebar-info p {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.5;
+}
+.sidebar-info i { color: #fb923c; margin-top: 2px; flex-shrink: 0; }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .event-details-body { grid-template-columns: 1fr; padding: 24px 16px; }
+    .sticky-card { position: static; }
+    .details-grid { grid-template-columns: 1fr; }
+    .event-sidebar { order: -1; }
+}
+@media (max-width: 768px) {
+    .event-hero { height: 300px; }
+    .event-hero-content { padding: 20px; }
+    .event-hero-content h1 { font-size: 22px; }
+    .event-hero-meta { flex-direction: column; gap: 8px; font-size: 13px; }
+    .status-banner { margin: 12px; }
+}
+@media (max-width: 480px) {
+    .event-details-body { padding: 16px 12px; gap: 16px; }
+    .card { padding: 20px; }
+    .sidebar-price .price { font-size: 36px; }
+}
+</style>
+{% endblock %}

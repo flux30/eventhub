@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}My Events - EventHub{% endblock %}
+
+{% block page_title %}My Events{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-left">
+            <h1>My Events</h1>
+            <p>Manage and track all your events</p>
+        </div>
+        <a href="{{ url_for('organizer.create_event') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Event
+        </a>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="events-stats">
+        <div class="stat-pill">
+            <span class="stat-pill-number">{{ events|length }}</span>
+            <span class="stat-pill-label">Total Events</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-pill-number">{{ events|selectattr('event_date', 'gt', now)|list|length }}</span>
+            <span class="stat-pill-label">Upcoming</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-pill-number">{{ events|selectattr('is_active', 'equalto', true)|list|length }}</span>
+            <span class="stat-pill-label">Active</span>
+        </div>
+    </div>
+
+    <!-- Events List -->
+    {% if events %}
+        <div class="events-grid">
+            {% for event in events %}
+            <div class="event-card">
+
+                <!-- ── Event Banner ──────────────────────────────────────────
+                     position:relative so the absolute badges anchor to it.
+                     --banner-bg drives the blurred backdrop via ::before.
+                ──────────────────────────────────────────────────────────── -->
+                <div class="event-banner"
+                     {% if event.image %}
+                     style="--banner-bg: url('{{ url_for('static', filename='uploads/events/' + event.image) }}')"
+                     {% endif %}>
+
+                    {% if event.image %}
+                        <img src="{{ url_for('static', filename='uploads/events/' + event.image) }}"
+                             alt="{{ event.title }}">
+                    {% else %}
+                        <div class="event-banner-placeholder">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                    {% endif %}
+
+                    <!-- Category badge — top-left, inside banner (position:relative) -->
+                    <span class="event-category">{{ event.category|title }}</span>
+
+                    <!-- Status badge — top-right, inside banner (position:relative) -->
+                    {% if event.event_date < now %}
+                        <span class="event-status status-past">Past</span>
+                    {% elif event.available_seats == 0 %}
+                        <span class="event-status status-full">Full</span>
+                    {% elif event.is_active %}
+                        <span class="event-status status-active">Active</span>
+                    {% else %}
+                        <span class="event-status status-inactive">Inactive</span>
+                    {% endif %}
+
+                </div>
+                <!-- ── End Event Banner ──────────────────────────────────── -->
+
+                <!-- Event Info -->
+                <div class="event-info">
+                    <h3 class="event-title">{{ event.title }}</h3>
+
+                    <div class="event-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ event.event_date.strftime('%d %b %Y') }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ event.event_date.strftime('%I:%M %p') }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ event.location[:30] }}{% if event.location|length > 30 %}...{% endif %}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-users"></i>
+                            <span>
+                                {{ event.max_participants - (event.available_seats or event.max_participants) }}
+                                / {{ event.max_participants }} registered
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Registration Progress Bar -->
+                    {% set registered = event.max_participants - (event.available_seats or event.max_participants) %}
+                    {% set fill_pct = ((registered / event.max_participants) * 100)|int %}
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill
+                                {% if fill_pct >= 90 %}fill-danger
+                                {% elif fill_pct >= 60 %}fill-warning
+                                {% else %}fill-success{% endif %}"
+                                style="width: {{ fill_pct }}%">
+                            </div>
+                        </div>
+                        <span class="progress-label">{{ fill_pct }}% full</span>
+                    </div>
+
+                    <!-- Price + Type -->
+                    <div class="event-price">
+                        {% if event.is_paid %}
+                            <span class="price-badge paid">₹{{ event.price|round|int }}</span>
+                        {% else %}
+                            <span class="price-badge free">Free</span>
+                        {% endif %}
+                        <span class="event-type-badge">{{ event.event_type|title }}</span>
+                    </div>
+                </div>
+
+                <!-- Event Actions -->
+                <div class="event-actions">
+                    <a href="{{ url_for('organizer.event_details', event_id=event.id) }}"
+                       class="action-btn btn-view" title="View Details">
+                        <i class="fas fa-eye"></i>
+                        <span>View</span>
+                    </a>
+                    <a href="{{ url_for('organizer.view_registrations', event_id=event.id) }}"
+                       class="action-btn btn-registrations" title="Registrations">
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Registrations</span>
+                    </a>
+                    <a href="{{ url_for('organizer.edit_event', event_id=event.id) }}"
+                       class="action-btn btn-edit" title="Edit Event">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit</span>
+                    </a>
+                    <form method="POST"
+                          action="{{ url_for('organizer.delete_event', event_id=event.id) }}"
+                          class="delete-form"
+                          onsubmit="return confirmDelete('{{ event.title }}')">
+                        <button type="submit" class="action-btn btn-delete" title="Delete Event">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Delete</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-calendar-plus"></i>
+            </div>
+            <h2>No events yet</h2>
+            <p>You haven't created any events. Start by creating your first event!</p>
+            <a href="{{ url_for('organizer.create_event') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Your First Event
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<style>
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+.page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+
+/* Stats Pills */
+.events-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+.stat-pill {
+    background: var(--bg-elevated);
+    border-radius: 12px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.stat-pill-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -1px;
+}
+.stat-pill-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Events Grid */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 24px;
+}
+
+/* Event Card */
+.event-card {
+    background: var(--bg-elevated);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;   /* banner → info → actions stack vertically */
+}
+.event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+/* Event Banner */
+.event-banner {
+    position: relative;     /* anchors the absolute badges */
+    height: 260px;
+    overflow: hidden;
+    background: #0a0f1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;         /* banner never collapses in flex column */
+}
+.event-banner::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background-image: var(--banner-bg);
+    background-size: cover;
+    background-position: center;
+    filter: blur(20px) brightness(0.4);
+    z-index: 0;
+}
+.event-banner img {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+.event-banner-placeholder {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1040, #0d2340);
+    font-size: 48px;
+    color: rgba(255,255,255,0.2);
+}
+
+/* Status badge — top-right of banner */
+.event-status {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.status-active   { background: rgba(16,185,129,0.9);  color: white; }
+.status-past     { background: rgba(100,116,139,0.9); color: white; }
+.status-full     { background: rgba(239,68,68,0.9);   color: white; }
+.status-inactive { background: rgba(251,146,60,0.9);  color: white; }
+
+/* Category badge — top-left of banner */
+.event-category {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    backdrop-filter: blur(4px);
+}
+
+/* Event Info */
+.event-info {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.event-title {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-primary);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Meta grid */
+.event-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.meta-item i {
+    color: var(--accent);
+    width: 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.fill-success { background: #10b981; }
+.fill-warning { background: #f59e0b; }
+.fill-danger  { background: #ef4444; }
+.progress-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    width: 48px;
+    text-align: right;
+}
+
+/* Price & Type */
+.event-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.price-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.price-badge.free {
+    background: rgba(16,185,129,0.12);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.3);
+}
+.price-badge.paid {
+    background: rgba(77,166,255,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(77,166,255,0.3);
+}
+.event-type-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Action Buttons */
+.event-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+    width: 100%;
+}
+.action-btn:last-child,
+.delete-form:last-child .action-btn { border-right: none; }
+.action-btn i { font-size: 14px; }
+.action-btn:hover              { background: rgba(255,255,255,0.04); }
+.btn-view:hover                { color: var(--accent); }
+.btn-registrations:hover       { color: #a855f7; }
+.btn-edit:hover                { color: #f59e0b; }
+.btn-delete:hover              { color: #ef4444; background: rgba(239,68,68,0.06); }
+.delete-form { display: contents; }
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--bg-elevated);
+    border-radius: 16px;
+    border: 1px dashed rgba(255,255,255,0.1);
+}
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(77,166,255,0.1);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--accent);
+    margin: 0 auto 24px;
+}
+.empty-state h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+.empty-state p  { color: var(--text-secondary); margin-bottom: 28px; font-size: 15px; }
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(77,166,255,0.4);
+}
+
+@media (max-width: 768px) {
+    .page-header { flex-direction: column; gap: 16px; }
+    .events-grid { grid-template-columns: 1fr; }
+    .event-meta  { grid-template-columns: 1fr; }
+}
+</style>
+
+{% block extra_js %}
+<script>
+function confirmDelete(eventTitle) {
+    return confirm(`Are you sure you want to delete "${eventTitle}"? This action cannot be undone.`);
+}
+</script>
+{% endblock %}
+
+{% endblock %}

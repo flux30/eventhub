@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}QR Scanner - EventHub{% endblock %}
+
+{% block extra_css %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>QR Code Scanner</h1>
+        <p class="text-muted">Scan participant tickets for attendance</p>
+    </div>
+</div>
+
+<div class="scanner-container">
+    <div class="scanner-card">
+        <div id="qr-reader" class="qr-reader"></div>
+        
+        <div class="scanner-status" id="scannerStatus">
+            <i class="fas fa-qrcode"></i>
+            <p>Position QR code within the frame</p>
+        </div>
+        
+        <div class="scanner-result success-result" id="scannerResult" style="display: none;">
+            <div class="result-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 id="resultName"></h3>
+            <p id="resultEvent"></p>
+            <div class="result-details">
+                <span id="resultId"></span>
+                <span id="resultStatus"></span>
+            </div>
+        </div>
+        
+        <div class="scanner-result error-result" id="errorResult" style="display: none;">
+            <div class="result-icon" style="color: var(--accent-danger);">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <h3>Verification Failed</h3>
+            <p id="errorMessage"></p>
+        </div>
+        
+        <div class="scanner-controls">
+            <button id="startBtn" class="btn btn-primary btn-lg">
+                <i class="fas fa-camera"></i> Start Scanning
+            </button>
+            <button id="stopBtn" class="btn btn-danger btn-lg" style="display: none;">
+                <i class="fas fa-stop"></i> Stop Scanning
+            </button>
+        </div>
+    </div>
+    
+    <!-- Manual Entry -->
+    <div class="manual-entry-card">
+        <h3>Manual Entry</h3>
+        <p class="text-muted">Enter registration ID manually</p>
+        
+        <form id="manualForm" class="manual-form">
+            <div class="form-group">
+                <input type="text" 
+                       id="manualInput" 
+                       class="form-control" 
+                       placeholder="REG-123">
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fas fa-check"></i> Mark Attendance
+            </button>
+        </form>
+        
+        <!-- Recent Scans -->
+        <div class="recent-scans" id="recentScans" style="margin-top: var(--spacing-2xl);">
+            <h4>Recent Scans</h4>
+            <div id="scansList"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.scanner-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-2xl);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.scanner-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+}
+
+.qr-reader {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: var(--spacing-xl);
+    background: var(--bg-tertiary);
+    min-height: 300px;
+}
+
+.scanner-status {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.scanner-status i {
+    font-size: 3rem;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.scanner-status p {
+    color: var(--text-secondary);
+}
+
+.scanner-result {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.success-result {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid var(--accent-success);
+}
+
+.error-result {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid var(--accent-danger);
+}
+
+.result-icon {
+    font-size: 4rem;
+    color: var(--accent-success);
+    margin-bottom: var(--spacing-lg);
+}
+
+.scanner-result h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.scanner-result p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.result-details {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.result-details span {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.scanner-controls {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.scanner-controls .btn {
+    flex: 1;
+}
+
+.manual-entry-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+}
+
+.manual-entry-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.manual-entry-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+}
+
+.manual-form {
+    margin-top: var(--spacing-xl);
+}
+
+.recent-scans {
+    padding-top: var(--spacing-xl);
+    border-top: 1px solid var(--border-color);
+}
+
+#scansList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.scan-item {
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.scan-item-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+.scan-item-time {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 1024px) {
+    .scanner-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+let html5QrCode;
+let recentScans = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('startBtn').addEventListener('click', startScanning);
+    document.getElementById('stopBtn').addEventListener('click', stopScanning);
+    document.getElementById('manualForm').addEventListener('submit', handleManualEntry);
+});
+
+function startScanning() {
+    html5QrCode = new Html5Qrcode("qr-reader");
+    
+    html5QrCode.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanError
+    ).then(() => {
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'block';
+        document.getElementById('scannerStatus').innerHTML = '<i class="fas fa-spinner fa-spin"></i><p>Scanning...</p>';
+    }).catch(err => {
+        console.error('Camera error:', err);
+        alert('Unable to start camera. Please check permissions.');
+    });
+}
+
+function stopScanning() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('scannerStatus').innerHTML = '<i class="fas fa-qrcode"></i><p>Scanner stopped</p>';
+        }).catch(err => {
+            console.error('Stop error:', err);
+        });
+    }
+}
+
+function onScanSuccess(decodedText) {
+    console.log('Scanned:', decodedText);
+    verifyQR(decodedText);
+    
+    // Pause scanning briefly
+    if (html5QrCode) {
+        html5QrCode.pause();
+        setTimeout(() => {
+            if (html5QrCode) {
+                html5QrCode.resume();
+            }
+        }, 2000);
+    }
+}
+
+function onScanError(error) {
+    // Silent - scanning errors are normal
+}
+
+function verifyQR(qrData) {
+    fetch('{{ url_for("organizer.verify_qr") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qr_data: qrData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data);
+            addToRecentScans(data);
+        } else {
+            showError(data.error || 'Verification failed');
+        }
+    })
+    .catch(error => {
+        console.error('Verify error:', error);
+        showError('Network error. Please try again.');
+    });
+}
+
+function showSuccess(data) {
+    const resultDiv = document.getElementById('scannerResult');
+    const errorDiv = document.getElementById('errorResult');
+    
+    document.getElementById('resultName').textContent = data.user_name;
+    document.getElementById('resultEvent').textContent = data.event_title;
+    document.getElementById('resultId').textContent = 'ID: ' + data.registration_id;
+    document.getElementById('resultStatus').textContent = data.already_attended ? 'Already Attended' : 'Attendance Marked ✓';
+    
+    errorDiv.style.display = 'none';
+    resultDiv.style.display = 'block';
+    document.getElementById('scannerStatus').style.display = 'none';
+    
+    // Play success sound (optional)
+    try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==');
+        audio.play();
+    } catch(e) {}
+    
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+        document.getElementById('scannerStatus').style.display = 'block';
+    }, 3000);
+}
+
+function showError(message) {
+    const resultDiv = document.getElementById('scannerResult');
+    const errorDiv = document.getElementById('errorResult');
+    
+    document.getElementById('errorMessage').textContent = message;
+    
+    resultDiv.style.display = 'none';
+    errorDiv.style.display = 'block';
+    document.getElementById('scannerStatus').style.display = 'none';
+    
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+        document.getElementById('scannerStatus').style.display = 'block';
+    }, 3000);
+}
+
+function handleManualEntry(e) {
+    e.preventDefault();
+    const input = document.getElementById('manualInput').value.trim();
+    if (input) {
+        verifyQR(input);
+        document.getElementById('manualInput').value = '';
+    }
+}
+
+function addToRecentScans(data) {
+    const scan = {
+        name: data.user_name,
+        id: data.registration_id,
+        time: new Date().toLocaleTimeString()
+    };
+    
+    recentScans.unshift(scan);
+    if (recentScans.length > 5) recentScans.pop();
+    
+    updateRecentScansList();
+}
+
+function updateRecentScansList() {
+    const listDiv = document.getElementById('scansList');
+    
+    if (recentScans.length === 0) {
+        listDiv.innerHTML = '<p class="text-muted" style="text-align: center; padding: var(--spacing-lg);">No scans yet</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = recentScans.map(scan => `
+        <div class="scan-item">
+            <span class="scan-item-name">${scan.name}</span>
+            <span class="scan-item-time">ID: ${scan.id} • ${scan.time}</span>
+        </div>
+    `).join('');
+}
+
+// Initialize recent scans list
+updateRecentScansList();
+</script>
+{% endblock %}

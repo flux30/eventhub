@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Registration Confirmed – {{ event.title }}</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#0a0f1e;
+             font-family:'Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+         style="background-color:#0a0f1e;min-height:100vh;padding:40px 16px;">
+    <tr>
+      <td align="center" valign="top">
+
+        <!-- ══ CARD (max 600px) ═══════════════════════════════════════════ -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+               style="max-width:600px;border-radius:16px;overflow:hidden;
+                      box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+
+
+          <!-- ── HEADER ──────────────────────────────────────────────────── -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#a855f7 55%,#ec4899 100%);
+                        padding:40px 40px 36px;text-align:center;">
+
+              <!-- Logo wordmark -->
+              <p style="margin:0 0 24px;font-size:22px;font-weight:700;
+                         color:#ffffff;letter-spacing:-0.3px;">
+                &#128197;&nbsp;EventHub
+              </p>
+
+              <!-- "Confirmed" pill badge -->
+              <p style="margin:0 0 16px;display:inline-block;
+                         background:rgba(255,255,255,0.15);
+                         border:1px solid rgba(255,255,255,0.25);
+                         color:#ffffff;font-size:11px;font-weight:600;
+                         letter-spacing:1.5px;text-transform:uppercase;
+                         padding:5px 16px;border-radius:20px;">
+                &#127881;&nbsp; Confirmed
+              </p>
+
+              <h1 style="margin:0 0 10px;color:#ffffff;font-size:30px;
+                          font-weight:700;line-height:1.2;letter-spacing:-0.5px;">
+                You're registered!
+              </h1>
+              <p style="margin:0;color:rgba(255,255,255,0.85);font-size:15px;line-height:1.5;">
+                Your spot is confirmed. Here are your event details.
+              </p>
+            </td>
+          </tr>
+
+
+          <!-- ── BODY ────────────────────────────────────────────────────── -->
+          <tr>
+            <td style="background-color:#111827;padding:36px 40px;">
+
+              <!-- Greeting -->
+              <p style="margin:0 0 24px;color:#e2e8f0;font-size:16px;line-height:1.6;">
+                Hi <strong style="color:#ffffff;">{{ user.name }}</strong>,<br>
+                Your registration for
+                <strong style="color:#a78bfa;">{{ event.title }}</strong>
+                has been confirmed. We look forward to seeing you there!
+              </p>
+
+
+              <!-- ── Event Detail Card ──────────────────────────────────── -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                     style="background-color:#1e293b;border-radius:12px;
+                             border-left:4px solid #a855f7;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:24px 28px;">
+
+                    <p style="margin:0 0 20px;color:#a78bfa;font-size:11px;font-weight:600;
+                               letter-spacing:1.2px;text-transform:uppercase;">
+                      Event Details
+                    </p>
+
+                    <!-- Event name row -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td width="28" valign="top" style="padding-top:2px;font-size:18px;">
+                          &#127881;
+                        </td>
+                        <td style="padding-left:10px;">
+                          <p style="margin:0 0 2px;color:#94a3b8;font-size:11px;font-weight:600;
+                                     text-transform:uppercase;letter-spacing:0.8px;">Event</p>
+                          <p style="margin:0;color:#f1f5f9;font-size:16px;font-weight:700;">
+                            {{ event.title }}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Thin divider -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td style="height:1px;background:rgba(255,255,255,0.06);
+                                    font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <!-- Date & Time row -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td width="28" valign="top" style="padding-top:2px;font-size:16px;">
+                          &#128197;
+                        </td>
+                        <td style="padding-left:10px;">
+                          <p style="margin:0 0 2px;color:#94a3b8;font-size:11px;font-weight:600;
+                                     text-transform:uppercase;letter-spacing:0.8px;">Date &amp; Time</p>
+                          <p style="margin:0;color:#e2e8f0;font-size:14px;font-weight:500;">
+                            {{ event.event_date.strftime('%A, %d %B %Y') }}
+                          </p>
+                          <p style="margin:2px 0 0;color:#a855f7;font-size:14px;font-weight:600;">
+                            {{ event.event_date.strftime('%I:%M %p') }}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Thin divider -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td style="height:1px;background:rgba(255,255,255,0.06);
+                                    font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <!-- Location row -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td width="28" valign="top" style="padding-top:2px;font-size:16px;">
+                          &#128205;
+                        </td>
+                        <td style="padding-left:10px;">
+                          <p style="margin:0 0 2px;color:#94a3b8;font-size:11px;font-weight:600;
+                                     text-transform:uppercase;letter-spacing:0.8px;">Location</p>
+                          <p style="margin:0;color:#e2e8f0;font-size:14px;font-weight:500;">
+                            {{ event.location }}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Thin divider -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                           style="margin-bottom:16px;">
+                      <tr>
+                        <td style="height:1px;background:rgba(255,255,255,0.06);
+                                    font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <!-- Registration ID row -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="28" valign="top" style="padding-top:2px;font-size:16px;">
+                          &#127915;
+                        </td>
+                        <td style="padding-left:10px;">
+                          <p style="margin:0 0 2px;color:#94a3b8;font-size:11px;font-weight:600;
+                                     text-transform:uppercase;letter-spacing:0.8px;">Registration ID</p>
+                          <p style="margin:0;color:#e2e8f0;font-size:14px;font-weight:600;
+                                     font-family:monospace;letter-spacing:0.5px;">
+                            #{{ registration.id }}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+              <!-- ── End Event Detail Card ─────────────────────────────── -->
+
+
+              <!-- ── QR Code block (only shown when qr_code file exists) ── -->
+              <!-- ── QR Code block ─────────────────────────────────────────────── -->
+{% if has_qr %}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+       style="margin-bottom:28px;">
+  <tr>
+    <td align="center"
+        style="background-color:#1e293b;border-radius:12px;
+                padding:28px;border:1px solid rgba(168,85,247,0.15);">
+
+      <p style="margin:0 0 16px;color:#a78bfa;font-size:11px;font-weight:600;
+                 letter-spacing:1.2px;text-transform:uppercase;">
+        Your Entry QR Code
+      </p>
+
+      <!--
+        src="cid:qr_code" references the inline attachment with
+        Content-ID: <qr_code> attached in email_sender.py.
+        This is the only method that works reliably in Gmail.
+      -->
+      <img src="cid:qr_code"
+           alt="QR Code for {{ event.title }}"
+           width="200" height="200"
+           style="display:block;margin:0 auto;
+                  border:3px solid rgba(168,85,247,0.35);
+                  border-radius:12px;padding:10px;background:#ffffff;" />
+
+      <p style="margin:16px 0 0;color:#64748b;font-size:12px;line-height:1.5;">
+        Screenshot this QR code and show it at the venue for check-in.
+      </p>
+    </td>
+  </tr>
+</table>
+{% endif %}
+<!-- ── End QR Code block ─────────────────────────────────────────── -->
+
+              <!-- ── End QR Code block ─────────────────────────────────── -->
+
+
+              <!-- ── CTA Button ─────────────────────────────────────────── -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                     style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="{{ base_url }}/participant/ticket/{{ registration.id }}"
+                       style="display:inline-block;
+                               background:linear-gradient(135deg,#6366f1,#a855f7);
+                               color:#ffffff;text-decoration:none;
+                               font-size:15px;font-weight:600;
+                               padding:14px 36px;border-radius:10px;
+                               letter-spacing:0.3px;">
+                      &#127915;&nbsp; View Full Ticket
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+
+              <!-- ── Info / reminders box ───────────────────────────────── -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="background-color:#1e293b;border-radius:10px;
+                              border:1px solid rgba(251,146,60,0.2);
+                              padding:18px 22px;">
+                    <p style="margin:0 0 8px;color:#fb923c;font-size:12px;
+                               font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">
+                      &#9888;&nbsp; Before you go
+                    </p>
+                    <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.9;">
+                      &bull;&nbsp; Arrive <strong style="color:#e2e8f0;">15 minutes early</strong>
+                               for smooth check-in<br>
+                      &bull;&nbsp; Bring a <strong style="color:#e2e8f0;">valid ID</strong>
+                               for verification<br>
+                      &bull;&nbsp; Keep this QR code accessible
+                               (screenshot recommended)<br>
+                      &bull;&nbsp; Can't attend? Please
+                      <a href="{{ base_url }}/participant/registrations"
+                         style="color:#a855f7;text-decoration:underline;font-weight:500;">
+                        cancel your registration</a>
+                      so someone on the waitlist can take your spot.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+
+          <!-- ── FOOTER ──────────────────────────────────────────────────── -->
+          <tr>
+            <td style="background-color:#0f172a;padding:24px 40px;text-align:center;
+                        border-top:1px solid rgba(255,255,255,0.06);">
+              <p style="margin:0 0 6px;color:#475569;font-size:12px;line-height:1.5;">
+                &#169; 2026
+                <strong style="color:#64748b;">EventHub</strong>
+                &nbsp;&bull;&nbsp;
+                You received this because you registered for
+                <strong style="color:#64748b;">{{ event.title }}</strong>.
+              </p>
+              <p style="margin:0;color:#334155;font-size:12px;">
+                Questions?&nbsp;
+                <a href="mailto:support@eventhub.com"
+                   style="color:#6366f1;text-decoration:none;font-weight:500;">
+                  support@eventhub.com
+                </a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- ══ END CARD ════════════════════════════════════════════════════ -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

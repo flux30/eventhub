@@ -1,0 +1,774 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} - EventHub{% endblock %}
+{% block page_title %}Event Details{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+    <!-- ── Status Banner
+         Feature 3: server-rendered on load
+         Feature 6: JS updates this live via id="statusBanner"
+    ──────────────────────────────────────────────────────────── -->
+    {% if event.status == 'cancelled' %}
+    <div id="statusBanner" class="status-banner cancelled" style="display:flex;">
+        <i class="fas fa-times-circle"></i>
+        <div>
+            <strong>This event has been cancelled.</strong>
+            {% if event.status_reason %}<span>{{ event.status_reason }}</span>{% endif %}
+        </div>
+    </div>
+    {% elif event.status == 'postponed' %}
+    <div id="statusBanner" class="status-banner postponed" style="display:flex;">
+        <i class="fas fa-calendar-times"></i>
+        <div>
+            <strong>This event has been postponed.</strong>
+            {% if event.postponed_to %}
+            <span>New date: {{ event.postponed_to.strftime('%A, %B %d, %Y at %I:%M %p') }}</span>
+            {% endif %}
+            {% if event.status_reason %}<span>{{ event.status_reason }}</span>{% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Hidden — Feature 6 JS may show this if status changes live -->
+    <div id="statusBanner" class="status-banner" style="display:none;"></div>
+    {% endif %}
+
+    <!-- ── Organizer Controls ─────────────────────────────────────────── -->
+    {% if current_user.is_authenticated and current_user.id == event.organizer_id %}
+    <div class="organizer-controls">
+        <span class="controls-label"><i class="fas fa-cog"></i> Organizer Controls</span>
+        {% if event.status != 'cancelled' %}
+        <button class="ctrl-btn btn-cancel" onclick="openStatusModal('cancelled')">
+            <i class="fas fa-times-circle"></i> Cancel Event
+        </button>
+        {% endif %}
+        {% if event.status != 'postponed' %}
+        <button class="ctrl-btn btn-postpone" onclick="openStatusModal('postponed')">
+            <i class="fas fa-calendar-times"></i> Postpone Event
+        </button>
+        {% endif %}
+        {% if event.status != 'active' %}
+        <button class="ctrl-btn btn-reactivate" onclick="openStatusModal('active')">
+            <i class="fas fa-check-circle"></i> Re-activate
+        </button>
+        {% endif %}
+        <a href="{{ url_for('organizer.edit_event', event_id=event.id) }}"
+           class="ctrl-btn btn-edit">
+            <i class="fas fa-edit"></i> Edit Event
+        </a>
+        <a href="{{ url_for('organizer.view_registrations', event_id=event.id) }}"
+           class="ctrl-btn btn-registrations">
+            <i class="fas fa-list"></i> Registrations
+        </a>
+    </div>
+
+    <!-- Status Change Modal -->
+    <div id="statusModal" class="modal-backdrop" style="display:none;">
+        <div class="modal-box">
+            <h3 id="modalTitle" class="modal-title">Change Event Status</h3>
+            <form method="POST" id="statusForm"
+                  action="{{ url_for('organizer.update_event_status', event_id=event.id) }}">
+                <input type="hidden" name="new_status" id="modalStatusInput">
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Reason
+                        <span style="color:#94a3b8; font-weight:400;">(shown to registrants)</span>
+                    </label>
+                    <textarea name="reason" class="form-textarea"
+                              placeholder="e.g. Venue unavailable, speaker cancellation..."
+                              rows="3"></textarea>
+                </div>
+
+                <div class="form-group" id="postponeDateGroup" style="display:none;">
+                    <label class="form-label">New Date & Time</label>
+                    <input type="datetime-local" name="postponed_to"
+                           class="form-input" id="postponeDateInput">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="ctrl-btn btn-ghost"
+                            onclick="closeStatusModal()">Cancel</button>
+                    <button type="submit" class="ctrl-btn btn-confirm">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('organizer.my_events') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Events
+    </a>
+
+    <!-- ── Hero Banner
+         Feature 5: prefer banner_url (Firebase CDN), fall back to local file
+    ──────────────────────────────────────────────────────────────────────── -->
+    {% set hero_bg = event.banner_url if event.banner_url else
+        (url_for('static', filename='uploads/events/' + event.image) if event.image else None) %}
+
+    <div class="event-hero"
+         {% if hero_bg %}style="--hero-bg: url('{{ hero_bg }}')"{% endif %}>
+
+        {% if hero_bg %}
+            <img src="{{ hero_bg }}" alt="{{ event.title }}" class="hero-img">
+        {% else %}
+            <div class="hero-placeholder"></div>
+        {% endif %}
+
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-badges">
+                <span class="cat-badge">{{ event.category|title }}</span>
+                <span class="type-badge">{{ event.event_type|title }}</span>
+                {% if not event.is_paid %}<span class="free-badge">Free</span>{% endif %}
+                <!-- Status badge for non-active events -->
+                {% if event.status == 'cancelled' %}
+                    <span class="status-hero-badge cancelled-badge">Cancelled</span>
+                {% elif event.status == 'postponed' %}
+                    <span class="status-hero-badge postponed-badge">Postponed</span>
+                {% endif %}
+            </div>
+            <h1 class="hero-title">{{ event.title }}</h1>
+            <div class="hero-meta">
+                <span><i class="fas fa-calendar"></i> {{ event.event_date.strftime('%B %d, %Y') }}</span>
+                <span><i class="fas fa-clock"></i> {{ event.event_date.strftime('%I:%M %p') }}</span>
+                <span><i class="fas fa-map-marker-alt"></i> {{ event.location }}</span>
+                <span><i class="fas fa-users"></i>
+                    {{ event.max_participants - (event.available_seats or event.max_participants) }} attending
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Content Grid ──────────────────────────────────────────────── -->
+    <div class="content-grid">
+
+        <!-- ── Left Column ──────────────────────────────────────────── -->
+        <div class="content-main">
+
+            <!-- Registration Overview Stats (organizer-only) -->
+            <div class="content-card">
+                <h2 class="content-title">
+                    <i class="fas fa-chart-bar" style="color:var(--accent);font-size:16px;"></i>
+                    Registration Overview
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="stat-label">Confirmed</div>
+                            <div class="stat-value">{{ stats.confirmed }}</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon orange"><i class="fas fa-hourglass-half"></i></div>
+                        <div>
+                            <div class="stat-label">Waitlist</div>
+                            <div class="stat-value">{{ stats.waitlist }}</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        <div>
+                            <div class="stat-label">Total Registered</div>
+                            <div class="stat-value">{{ stats.total_registrations }}</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon purple"><i class="fas fa-door-open"></i></div>
+                        <div>
+                            <div class="stat-label">Attended</div>
+                            <div class="stat-value">{{ stats.attended }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ratings -->
+            {% if rating_data.count > 0 %}
+            <div class="content-card">
+                <div class="rating-row">
+                    <div class="rating-big">{{ rating_data.average }}</div>
+                    <div class="rating-stars">
+                        {% for i in range(1, 6) %}
+                            <i class="fas fa-star {% if i <= rating_data.average %}star-filled{% else %}star-empty{% endif %}"></i>
+                        {% endfor %}
+                        <span class="rating-count">
+                            {{ rating_data.count }} review{{ 's' if rating_data.count != 1 }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- About -->
+            <div class="content-card">
+                <h2 class="content-title">About This Event</h2>
+                <p class="event-desc">{{ event.description }}</p>
+            </div>
+
+            {% if event.requirements %}
+            <div class="content-card">
+                <h2 class="content-title">Requirements</h2>
+                <p class="event-desc">{{ event.requirements }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Event Details -->
+            <div class="content-card">
+                <h2 class="content-title">Event Details</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-icon blue"><i class="fas fa-calendar-alt"></i></div>
+                        <div>
+                            <div class="detail-label">Date</div>
+                            <div class="detail-value">{{ event.event_date.strftime('%A, %B %d, %Y') }}</div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon purple"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <div class="detail-label">Time</div>
+                            <div class="detail-value">
+                                {{ event.event_date.strftime('%I:%M %p') }}
+                                {% if event.duration %}· {{ event.duration }}h{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon orange"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <div class="detail-label">Location</div>
+                            <div class="detail-value">{{ event.location }}</div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon green"><i class="fas fa-chair"></i></div>
+                        <div>
+                            <div class="detail-label">Seats Available</div>
+                            <div class="detail-value">
+                                {{ event.available_seats or event.max_participants }}
+                                of {{ event.max_participants }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon red"><i class="fas fa-calendar-times"></i></div>
+                        <div>
+                            <div class="detail-label">Registration Closes</div>
+                            <div class="detail-value">
+                                {{ event.registration_deadline.strftime('%B %d, %Y') }}
+                            </div>
+                        </div>
+                    </div>
+                    {% if event.meeting_link %}
+                    <div class="detail-item">
+                        <div class="detail-icon blue"><i class="fas fa-video"></i></div>
+                        <div>
+                            <div class="detail-label">Meeting Link</div>
+                            <a href="{{ event.meeting_link }}" target="_blank" class="detail-link">
+                                Join Online <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if event.tags %}
+            <div class="content-card">
+                <h2 class="content-title">Tags</h2>
+                <div class="tags-row">
+                    {% for tag in event.tags.split(',') %}
+                        <span class="tag-chip">{{ tag.strip() }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ── Right Sidebar ─────────────────────────────────────────── -->
+        <div class="content-sidebar">
+            <div class="register-card">
+
+                <!-- Price -->
+                <div class="price-block">
+                    {% if event.is_paid %}
+                        <span class="price-big">₹{{ event.price|round|int }}</span>
+                        <span class="price-sub">per person</span>
+                    {% else %}
+                        <span class="price-big free-color">Free</span>
+                        <span class="price-sub">No registration fee</span>
+                    {% endif %}
+                </div>
+
+                <!-- Capacity Bar
+                     Feature 6: data-* read by realtime_seats.js
+                     IDs capFill / seatsText / capPct updated live
+                -->
+                {% set reg_count = event.max_participants - (event.available_seats or event.max_participants) %}
+                {% set pct = ((reg_count / event.max_participants) * 100)|int
+                             if event.max_participants > 0 else 0 %}
+                <div class="cap-block"
+                     data-event-id="{{ event.id }}"
+                     data-max-participants="{{ event.max_participants }}"
+                     data-allow-waitlist="{{ 'true' if event.allow_waitlist else 'false' }}">
+
+                    <div class="cap-track">
+                        <div id="capFill"
+                             class="cap-fill {% if pct >= 90 %}fill-red{% elif pct >= 60 %}fill-yellow{% else %}fill-green{% endif %}"
+                             style="width: {{ pct }}%"></div>
+                    </div>
+                    <div class="cap-row">
+                        {% if event.available_seats and event.available_seats > 0 %}
+                            <span id="seatsText" class="seats-ok">
+                                {{ event.available_seats }} seats left
+                            </span>
+                        {% else %}
+                            <span id="seatsText" class="seats-full">Event Full</span>
+                        {% endif %}
+                        <span id="capPct" class="cap-pct">{{ pct }}% filled</span>
+                    </div>
+
+                    <!-- Feature 6: live indicator -->
+                    <div class="live-indicator-row">
+                        <span id="liveIndicator" class="live-dot polling"
+                              title="Connecting to real-time updates...">○ Syncing</span>
+                    </div>
+                </div>
+
+                <!-- Register button area
+                     Organizer is rarely also a registrant, but edge case is handled.
+                     IDs registerForm / waitlistForm / eventFullBtn used by realtime_seats.js.
+                -->
+                {% if registration %}
+                    {% if registration.status == 'confirmed' %}
+                    <div class="reg-status-box confirmed">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>You're registered!</strong>
+                            <span>Registration confirmed</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('participant.view_ticket', registration_id=registration.id) }}"
+                       class="reg-btn btn-outline">
+                        <i class="fas fa-ticket-alt"></i> View My Ticket
+                    </a>
+                    {% elif registration.status == 'waitlist' %}
+                    <div class="reg-status-box waitlist">
+                        <i class="fas fa-hourglass-half"></i>
+                        <div>
+                            <strong>On Waitlist</strong>
+                            <span>You'll be notified if a spot opens</span>
+                        </div>
+                    </div>
+                    {% elif registration.status == 'cancelled' %}
+                    <form id="registerForm" method="POST"
+                          action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                        <button type="submit" class="reg-btn btn-primary">
+                            <i class="fas fa-redo"></i> Register Again
+                        </button>
+                    </form>
+                    {% endif %}
+                {% elif event.available_seats and event.available_seats > 0 %}
+                    <form id="registerForm" method="POST"
+                          action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                        <button type="submit" class="reg-btn btn-primary">
+                            <i class="fas fa-ticket-alt"></i>
+                            {% if event.is_paid %}Register — ₹{{ event.price|round|int }}
+                            {% else %}Register for Free{% endif %}
+                        </button>
+                    </form>
+                {% elif event.allow_waitlist %}
+                    <form id="waitlistForm" method="POST"
+                          action="{{ url_for('participant.register_event', event_id=event.id) }}">
+                        <button type="submit" class="reg-btn btn-waitlist">
+                            <i class="fas fa-list"></i> Join Waitlist
+                        </button>
+                    </form>
+                {% else %}
+                    <button id="eventFullBtn" class="reg-btn btn-primary" disabled>
+                        Event Full
+                    </button>
+                {% endif %}
+
+                <!-- Deadline -->
+                <div class="deadline-note">
+                    <i class="fas fa-info-circle"></i>
+                    Closes {{ event.registration_deadline.strftime('%b %d, %Y') }}
+                </div>
+
+                <!-- Organizer -->
+                <div class="organizer-row">
+                    <div class="org-avatar">{{ event.organizer.name[0]|upper }}</div>
+                    <div>
+                        <div class="org-name">{{ event.organizer.name }}</div>
+                        <div class="org-label">Event Organizer</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+.page-container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+
+.back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--text-secondary); text-decoration: none; font-size: 14px;
+    font-weight: 600; margin-bottom: 24px; transition: color 0.2s;
+}
+.back-link:hover { color: var(--accent); }
+
+/* ── Status Banner ──────────────────────────────────────────────── */
+.status-banner {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 20px; border-radius: 12px; margin-bottom: 20px;
+    font-size: 14px; line-height: 1.5;
+}
+.status-banner i { font-size: 20px; margin-top: 1px; flex-shrink: 0; }
+.status-banner strong { display: block; font-weight: 700; margin-bottom: 2px; }
+.status-banner span { display: block; color: inherit; opacity: 0.85; font-size: 13px; }
+.status-banner.cancelled {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5;
+}
+.status-banner.postponed {
+    background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.25); color: #fdba74;
+}
+
+/* ── Organizer Controls ─────────────────────────────────────────── */
+.organizer-controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+}
+.controls-label {
+    font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-right: 6px; white-space: nowrap;
+}
+.ctrl-btn {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; display: inline-flex; align-items: center;
+    gap: 7px; transition: all 0.2s; text-decoration: none;
+}
+.btn-cancel     { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+.btn-cancel:hover    { background: rgba(239,68,68,0.22); }
+.btn-postpone   { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
+.btn-postpone:hover  { background: rgba(251,146,60,0.22); }
+.btn-reactivate { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.btn-reactivate:hover{ background: rgba(16,185,129,0.22); }
+.btn-edit       { background: rgba(77,166,255,0.12); color: #4da6ff; border: 1px solid rgba(77,166,255,0.25); }
+.btn-edit:hover      { background: rgba(77,166,255,0.22); }
+.btn-registrations { background: rgba(168,85,247,0.12); color: #a855f7; border: 1px solid rgba(168,85,247,0.25); }
+.btn-registrations:hover { background: rgba(168,85,247,0.22); }
+.btn-ghost  { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1); }
+.btn-confirm{ background: var(--accent); color: white; border: none; }
+
+/* ── Modal ──────────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+}
+.modal-box {
+    background: var(--bg-elevated); border-radius: 16px; padding: 32px;
+    border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 460px;
+}
+.modal-title { font-size: 20px; font-weight: 700; margin: 0 0 24px; }
+.form-group  { margin-bottom: 18px; }
+.form-label  { display: block; font-size: 13px; font-weight: 600;
+               color: var(--text-secondary); margin-bottom: 8px; }
+.form-textarea, .form-input {
+    width: 100%; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+    padding: 10px 14px; color: var(--text-primary); font-size: 14px;
+    font-family: inherit; resize: vertical;
+}
+.form-textarea:focus, .form-input:focus { outline: none; border-color: var(--accent); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+.event-hero {
+    position: relative; border-radius: 20px; overflow: hidden;
+    height: 480px; margin-bottom: 32px; background: #060b14;
+    display: flex; align-items: center; justify-content: center;
+}
+.event-hero::before {
+    content: ''; position: absolute; inset: -20px;
+    background-image: var(--hero-bg); background-size: cover;
+    background-position: center; filter: blur(28px) brightness(0.3) saturate(1.4);
+    transform: scale(1.1); z-index: 0;
+}
+.hero-img {
+    position: relative; z-index: 1; max-width: 100%; max-height: 100%;
+    width: auto; height: auto; object-fit: contain; display: block;
+}
+.hero-placeholder {
+    position: relative; z-index: 1; width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1040, #0d2340, #0a1628);
+}
+.hero-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(to top,
+        rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+}
+.hero-content {
+    position: absolute; bottom: 32px; left: 36px; right: 36px; z-index: 3;
+}
+.hero-badges { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.cat-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    background: rgba(77,166,255,0.2); color: var(--accent);
+    border: 1px solid rgba(77,166,255,0.3);
+}
+.type-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.free-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: rgba(16,185,129,0.2); color: #10b981;
+    border: 1px solid rgba(16,185,129,0.3);
+}
+.status-hero-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.cancelled-badge { background: rgba(239,68,68,0.25); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+.postponed-badge { background: rgba(251,146,60,0.25); color: #fdba74; border: 1px solid rgba(251,146,60,0.4); }
+.hero-title {
+    font-size: 36px; font-weight: 800; letter-spacing: -1px;
+    line-height: 1.15; margin-bottom: 14px; margin-top: 0;
+}
+.hero-meta {
+    display: flex; gap: 20px; font-size: 14px;
+    color: rgba(255,255,255,0.75); flex-wrap: wrap;
+}
+.hero-meta i { color: var(--accent); margin-right: 5px; }
+
+/* ── Layout ──────────────────────────────────────────────────────── */
+.content-grid {
+    display: grid; grid-template-columns: 1fr 360px;
+    gap: 28px; align-items: start;
+}
+.content-main { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+.content-card {
+    background: var(--bg-elevated); border-radius: 14px; padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.content-title { font-size: 18px; font-weight: 700; margin: 0 0 16px 0;
+                 display: flex; align-items: center; gap: 8px; }
+.event-desc {
+    font-size: 15px; color: var(--text-secondary);
+    line-height: 1.8; margin: 0; white-space: pre-wrap;
+}
+
+/* ── Stats Grid ──────────────────────────────────────────────────── */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+}
+.stat-item { display: flex; align-items: center; gap: 14px; }
+.stat-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.stat-icon.green  { background: rgba(16,185,129,0.1);  color: #10b981; }
+.stat-icon.orange { background: rgba(251,146,60,0.1);  color: #fb923c; }
+.stat-icon.blue   { background: rgba(77,166,255,0.1);  color: #4da6ff; }
+.stat-icon.purple { background: rgba(168,85,247,0.1);  color: #a855f7; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+              color: var(--text-tertiary); font-weight: 600; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 800; line-height: 1; }
+
+/* ── Ratings ─────────────────────────────────────────────────────── */
+.rating-row { display: flex; align-items: center; gap: 16px; }
+.rating-big { font-size: 48px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+.rating-stars { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rating-stars i { font-size: 18px; }
+.star-filled { color: #facc15; }
+.star-empty  { color: rgba(255,255,255,0.15); }
+.rating-count { font-size: 13px; color: var(--text-tertiary); margin-left: 6px; }
+
+/* ── Details Grid ────────────────────────────────────────────────── */
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.detail-item { display: flex; align-items: flex-start; gap: 14px; }
+.detail-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.detail-icon.blue   { background: rgba(77,166,255,0.1);  color: #4da6ff; }
+.detail-icon.purple { background: rgba(168,85,247,0.1);  color: #a855f7; }
+.detail-icon.orange { background: rgba(251,146,60,0.1);  color: #fb923c; }
+.detail-icon.green  { background: rgba(16,185,129,0.1);  color: #10b981; }
+.detail-icon.red    { background: rgba(239,68,68,0.1);   color: #ef4444; }
+.detail-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-tertiary); font-weight: 600; margin-bottom: 4px;
+}
+.detail-value { font-size: 14px; font-weight: 600; }
+.detail-link  { font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.detail-link:hover { text-decoration: underline; }
+
+/* ── Tags ────────────────────────────────────────────────────────── */
+.tags-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-chip {
+    padding: 5px 14px; border-radius: 16px; font-size: 12px; font-weight: 600;
+    background: rgba(77,166,255,0.1); color: var(--accent);
+    border: 1px solid rgba(77,166,255,0.2);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.content-sidebar { position: sticky; top: 20px; }
+.register-card {
+    background: var(--bg-elevated); border-radius: 16px; padding: 28px;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column; gap: 20px;
+}
+
+/* Price */
+.price-block { display: flex; flex-direction: column; gap: 4px; }
+.price-big { font-size: 42px; font-weight: 800; letter-spacing: -2px; display: block; }
+.price-big.free-color { color: #10b981; }
+.price-sub  { font-size: 13px; color: var(--text-tertiary); }
+
+/* Capacity */
+.cap-block { display: flex; flex-direction: column; gap: 8px; }
+.cap-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.cap-fill  { height: 100%; border-radius: 4px; transition: width 0.5s, background 0.5s; }
+.fill-green  { background: #10b981; }
+.fill-yellow { background: #f59e0b; }
+.fill-red    { background: #ef4444; }
+.cap-row { display: flex; justify-content: space-between; font-size: 12px; }
+.seats-ok   { color: #10b981; font-weight: 600; }
+.seats-full { color: #ef4444; font-weight: 600; }
+.cap-pct    { color: var(--text-tertiary); }
+
+/* ── Live indicator ──────────────────────────────────────────────── */
+.live-indicator-row { display: flex; justify-content: flex-end; margin-top: 4px; }
+.live-dot {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 12px; cursor: default; transition: all 0.3s;
+}
+.live-dot.live {
+    color: #10b981; background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+}
+.live-dot.polling {
+    color: var(--text-tertiary); background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Register buttons */
+.reg-btn {
+    width: 100%; padding: 14px 20px; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; transition: all 0.2s; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(77,166,255,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-waitlist { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+.btn-waitlist:hover { background: rgba(251,146,60,0.2); }
+.btn-outline { background: transparent; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.12); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Status box */
+.reg-status-box { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 10px; }
+.reg-status-box.confirmed { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); }
+.reg-status-box.waitlist  { background: rgba(251,146,60,0.1);  border: 1px solid rgba(251,146,60,0.2); }
+.reg-status-box.confirmed i { color: #10b981; font-size: 22px; }
+.reg-status-box.waitlist  i { color: #fb923c; font-size: 22px; }
+.reg-status-box strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.reg-status-box span   { font-size: 12px; color: var(--text-secondary); }
+
+/* Deadline */
+.deadline-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); }
+.deadline-note i { color: var(--accent); }
+
+/* Organizer */
+.organizer-row {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.org-avatar {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+}
+.org-name  { font-size: 15px; font-weight: 700; }
+.org-label { font-size: 12px; color: var(--text-tertiary); }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .content-grid    { grid-template-columns: 1fr; }
+    .content-sidebar { position: static; }
+    .details-grid    { grid-template-columns: 1fr; }
+    .stats-grid      { grid-template-columns: repeat(2, 1fr); }
+    .hero-title      { font-size: 26px; }
+    .event-hero      { height: 280px; }
+}
+@media (max-width: 640px) {
+    .hero-content { left: 20px; right: 20px; bottom: 20px; }
+    .hero-meta    { flex-direction: column; gap: 6px; }
+    .price-big    { font-size: 36px; }
+    .stats-grid   { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- Feature 3: Status modal JS -->
+<script>
+function openStatusModal(status) {
+    const titles = {
+        cancelled: '❌ Cancel This Event',
+        postponed: '📅 Postpone This Event',
+        active:    '✅ Re-activate This Event',
+    };
+    document.getElementById('modalTitle').textContent = titles[status] || 'Change Status';
+    document.getElementById('modalStatusInput').value = status;
+    document.getElementById('postponeDateGroup').style.display =
+        status === 'postponed' ? 'block' : 'none';
+    document.getElementById('postponeDateInput').required = (status === 'postponed');
+    document.getElementById('statusModal').style.display = 'flex';
+}
+
+function closeStatusModal() {
+    document.getElementById('statusModal').style.display = 'none';
+}
+
+document.getElementById('statusModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeStatusModal();
+});
+</script>
+
+<!-- Feature 6: Firebase client config — read by realtime_seats.js -->
+<script id="firebaseConfig" type="application/json">
+{
+  "apiKey":            "{{ firebase_config.apiKey }}",
+  "authDomain":        "{{ firebase_config.authDomain }}",
+  "projectId":         "{{ firebase_config.projectId }}",
+  "storageBucket":     "{{ firebase_config.storageBucket }}",
+  "messagingSenderId": "{{ firebase_config.messagingSenderId }}",
+  "appId":             "{{ firebase_config.appId }}"
+}
+</script>
+
+<!-- Feature 6: Firebase JS SDK + real-time seat listener -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="{{ url_for('static', filename='js/realtime_seats.js') }}"></script>
+<script>
+  console.log("Firebase config:", {{ firebase_config | tojson }});
+</script>
+
+{% endblock %}

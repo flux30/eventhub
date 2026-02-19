@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - EventHub{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-code">404</div>
+        <h1>Page Not Found</h1>
+        <p>Sorry, the page you're looking for doesn't exist or has been moved.</p>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Go Home
+            </a>
+            <button onclick="history.back()" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </button>
+        </div>
+    </div>
+    
+    <div class="error-visual">
+        <i class="fas fa-search"></i>
+    </div>
+</div>
+
+<style>
+.error-container {
+    min-height: calc(100vh - var(--topnav-height) - 100px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2xl);
+    padding: var(--spacing-2xl);
+    text-align: center;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+}
+
+.error-content p {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2xl);
+    max-width: 500px;
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+.error-visual {
+    font-size: 10rem;
+    color: var(--text-tertiary);
+    opacity: 0.3;
+}
+
+@media (max-width: 768px) {
+    .error-container {
+        flex-direction: column;
+    }
+    
+    .error-visual {
+        display: none;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .error-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

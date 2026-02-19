@@ -1,0 +1,683 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }} – User Details - EventHub{% endblock %}
+{% block page_title %}User Details{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+
+    <!-- ── Hero ──────────────────────────────────────────────── -->
+    <div class="detail-hero user-hero">
+        <div class="detail-hero-overlay">
+            <div class="detail-hero-content">
+                <div class="user-hero-avatar {{ 'avatar-inactive' if not user.is_active }}">
+                    {{ user.name[0]|upper }}
+                </div>
+                <div class="user-hero-info">
+                    <div class="hero-tags">
+                        <span class="hero-tag role-{{ user.role }}">
+                            <i class="fas fa-{{ 'user-shield' if user.role == 'admin' else 'user-tie' if user.role == 'organizer' else 'user' }}"></i>
+                            {{ user.role|capitalize }}
+                        </span>
+                        <span class="hero-tag {{ 'tag-active' if user.is_active else 'tag-inactive' }}">
+                            <i class="fas fa-{{ 'check-circle' if user.is_active else 'ban' }}"></i>
+                            {{ 'Active' if user.is_active else 'Inactive' }}
+                        </span>
+                    </div>
+                    <h1>{{ user.name }}</h1>
+                    <div class="hero-meta">
+                        <span><i class="fas fa-envelope"></i> {{ user.email }}</span>
+                        {% if user.phone %}
+                        <span><i class="fas fa-phone"></i> {{ user.phone }}</span>
+                        {% endif %}
+                        <span><i class="fas fa-calendar-plus"></i> Joined {{ user.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Body ──────────────────────────────────────────────── -->
+    <div class="detail-body">
+
+        <!-- Main -->
+        <div class="detail-main">
+
+            <!-- Profile details -->
+            <div class="card">
+                <h2><i class="fas fa-id-card"></i> Profile Details</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <strong>Full Name</strong>
+                            <p>{{ user.name }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email Address</strong>
+                            <p>{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <strong>Phone</strong>
+                            <p>{{ user.phone or '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-id-badge"></i>
+                        <div>
+                            <strong>Role</strong>
+                            <p>{{ user.role|capitalize }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-toggle-on"></i>
+                        <div>
+                            <strong>Account Status</strong>
+                            <p>
+                                <span class="inline-badge {{ 'badge-success' if user.is_active else 'badge-warning' }}">
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div>
+                            <strong>Member Since</strong>
+                            <p>{{ user.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events / Registrations -->
+            {% if user.role == 'organizer' %}
+            <div class="card">
+                <h2><i class="fas fa-calendar-alt"></i> Events Organized</h2>
+                {% if events %}
+                <div class="reg-list">
+                    {% for event in events %}
+                    <div class="reg-item">
+                        <div class="reg-avatar reg-avatar-event">{{ event.title[0]|upper }}</div>
+                        <div class="reg-info">
+                            <p class="reg-title">{{ event.title }}</p>
+                            <p class="reg-meta">
+                                <span><i class="fas fa-calendar"></i> {{ event.event_date.strftime('%d %b %Y') if event.event_date else '—' }}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ event.location or '—' }}</span>
+                                <span><i class="fas fa-users"></i> {{ event.max_participants - event.available_seats }}/{{ event.max_participants }}</span>
+                            </p>
+                        </div>
+                        <span class="inline-badge {{ 'badge-success' if event.is_active else 'badge-secondary' }}">
+                            {{ 'Active' if event.is_active else 'Inactive' }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No events organized yet</p>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="card">
+                <h2><i class="fas fa-ticket-alt"></i> Registrations</h2>
+                {% if registrations %}
+                <div class="reg-list">
+                    {% for reg in registrations %}
+                    <div class="reg-item">
+                        <div class="reg-avatar reg-avatar-event">
+                            {{ reg.event.title[0]|upper if reg.event else '?' }}
+                        </div>
+                        <div class="reg-info">
+                            <p class="reg-title">{{ reg.event.title if reg.event else 'Event deleted' }}</p>
+                            <p class="reg-meta">
+                                {% if reg.event and reg.event.event_date %}
+                                <span><i class="fas fa-calendar"></i> {{ reg.event.event_date.strftime('%d %b %Y') }}</span>
+                                {% endif %}
+                                <span><i class="fas fa-clock"></i> Registered {{ reg.created_at.strftime('%d %b %Y') }}</span>
+                            </p>
+                        </div>
+                        <div class="reg-badges">
+                            <span class="inline-badge {{ 'badge-success' if reg.status == 'confirmed' else 'badge-warning' if reg.status == 'waitlist' else 'badge-secondary' }}">
+                                {{ reg.status|capitalize }}
+                            </span>
+                            <span class="inline-badge badge-secondary">
+                                {{ reg.payment_status|replace('_',' ')|capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>No registrations yet</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div><!-- /detail-main -->
+
+        <!-- Sidebar -->
+        <div class="detail-sidebar">
+            <div class="card sticky-card sidebar-card">
+
+                <div class="sidebar-avatar {{ 'avatar-inactive' if not user.is_active }}">
+                    {{ user.name[0]|upper }}
+                </div>
+                <div class="sidebar-name">{{ user.name }}</div>
+                <div class="sidebar-sub">{{ user.email }}</div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="sidebar-stats">
+                    <div class="sidebar-stat">
+                        <span class="sidebar-stat-val">
+                            {% if user.role == 'organizer' %}{{ events|length if events else 0 }}
+                            {% else %}{{ registrations|length if registrations else 0 }}{% endif %}
+                        </span>
+                        <span class="sidebar-stat-label">
+                            {{ 'Organized' if user.role == 'organizer' else 'Bookings' }}
+                        </span>
+                    </div>
+                    <div class="sidebar-stat">
+                        <span class="sidebar-stat-val">{{ user.role|capitalize }}</span>
+                        <span class="sidebar-stat-label">Role</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                {% if user.id != current_user.id %}
+                <div class="sidebar-actions">
+                    <button class="action-side-btn btn-side-blue change-role-btn"
+                            data-user-id="{{ user.id }}"
+                            data-current-role="{{ user.role }}">
+                        <i class="fas fa-user-cog"></i> Change Role
+                    </button>
+                    <button class="action-side-btn {{ 'btn-side-orange' if user.is_active else 'btn-side-green' }} toggle-active-btn"
+                            data-user-id="{{ user.id }}"
+                            data-is-active="{{ 'true' if user.is_active else 'false' }}">
+                        <i class="fas fa-{{ 'ban' if user.is_active else 'check-circle' }}"></i>
+                        {{ 'Deactivate User' if user.is_active else 'Activate User' }}
+                    </button>
+                    <button class="action-side-btn btn-side-red delete-user-btn"
+                            data-user-id="{{ user.id }}"
+                            data-user-name="{{ user.name }}">
+                        <i class="fas fa-trash"></i> Delete User
+                    </button>
+                </div>
+                {% else %}
+                <div class="own-account-note">
+                    <i class="fas fa-info-circle"></i> This is your own account
+                </div>
+                {% endif %}
+
+                <div class="sidebar-divider"></div>
+
+                <div class="sidebar-footer-info">
+                    <p><i class="fas fa-calendar-plus"></i> Joined {{ user.created_at.strftime('%d %b %Y') }}</p>
+                </div>
+
+            </div>
+        </div><!-- /detail-sidebar -->
+
+    </div><!-- /detail-body -->
+</div><!-- /detail-container -->
+
+<!-- Change Role Modal -->
+<div class="modal-backdrop" id="roleModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <h3>Change User Role</h3>
+            <button class="modal-box-close" onclick="closeModal('roleModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-box-body">
+            <input type="hidden" id="roleUserId" value="{{ user.id }}">
+            <div class="form-field">
+                <label class="field-label">Select New Role</label>
+                <select id="newRole" class="field-input">
+                    <option value="participant" {{ 'selected' if user.role == 'participant' }}>Participant</option>
+                    <option value="organizer"   {{ 'selected' if user.role == 'organizer' }}>Organizer</option>
+                    <option value="admin"        {{ 'selected' if user.role == 'admin' }}>Admin</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-box-footer">
+            <button onclick="closeModal('roleModal')" class="btn-ghost">Cancel</button>
+            <button onclick="submitRoleChange()" class="btn-act-primary" id="roleSubmitBtn">
+                <span class="btn-text">Update Role</span>
+                <span class="btn-spin hidden"><i class="fas fa-spinner fa-spin"></i></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-backdrop" id="deleteModal">
+    <div class="modal-box modal-box-sm">
+        <div class="modal-box-header">
+            <h3>Delete User</h3>
+            <button class="modal-box-close" onclick="closeModal('deleteModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-box-body">
+            <div class="confirm-body">
+                <div class="confirm-icon red-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <p>Delete <strong>{{ user.name }}</strong>?</p>
+                <p class="confirm-sub">This permanently removes the user and all their registrations. This cannot be undone.</p>
+            </div>
+        </div>
+        <div class="modal-box-footer">
+            <button onclick="closeModal('deleteModal')" class="btn-ghost">Cancel</button>
+            <button onclick="confirmDelete('{{ user.id }}')" class="btn-act-danger" id="deleteSubmitBtn">
+                <span class="btn-text"><i class="fas fa-trash"></i> Delete User</span>
+                <span class="btn-spin hidden"><i class="fas fa-spinner fa-spin"></i></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer" class="toast-wrap"></div>
+
+<style>
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Container ──────────────────────────────────────────────── */
+.detail-container { width: 100%; overflow-x: hidden; margin: 0; }
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.detail-hero {
+    position: relative; height: 320px; overflow: hidden;
+    background: linear-gradient(135deg, #0f1729 0%, #1a0d2e 50%, #0d1f3c 100%);
+    display: flex; align-items: flex-end;
+}
+.user-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(77,166,255,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 50%, rgba(168,85,247,0.15) 0%, transparent 60%);
+}
+.detail-hero-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%);
+    display: flex; align-items: flex-end;
+}
+.detail-hero-content {
+    position: relative; z-index: 3;
+    padding: 32px 36px; width: 100%;
+    display: flex; align-items: flex-end; gap: 28px;
+}
+.user-hero-avatar {
+    width: 88px; height: 88px; flex-shrink: 0; border-radius: 20px;
+    background: linear-gradient(135deg, #4da6ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 38px; font-weight: 800; color: #fff;
+    border: 3px solid rgba(255,255,255,0.15);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.user-hero-avatar.avatar-inactive { filter: grayscale(1); opacity: 0.55; }
+.user-hero-info { flex: 1; min-width: 0; }
+.hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.role-participant { background: rgba(77,166,255,0.2);  border: 1px solid rgba(77,166,255,0.4);  color: #4da6ff; }
+.role-organizer   { background: rgba(251,146,60,0.2);  border: 1px solid rgba(251,146,60,0.4);  color: #fb923c; }
+.role-admin       { background: rgba(168,85,247,0.2);  border: 1px solid rgba(168,85,247,0.4);  color: #a855f7; }
+.tag-active       { background: rgba(16,185,129,0.2);  border: 1px solid rgba(16,185,129,0.4);  color: #10b981; }
+.tag-inactive     { background: rgba(156,163,175,0.2); border: 1px solid rgba(156,163,175,0.4); color: #9ca3af; }
+.user-hero-info h1 {
+    font-size: 32px; font-weight: 800; margin: 0 0 12px; line-height: 1.2;
+    color: white; text-shadow: 0 2px 12px rgba(0,0,0,0.4); word-break: break-word;
+}
+.hero-meta {
+    display: flex; gap: 22px; flex-wrap: wrap;
+    color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 500;
+}
+.hero-meta span { display: flex; align-items: center; gap: 7px; }
+.hero-meta i { color: #4da6ff; font-size: 12px; }
+
+/* ── Body ───────────────────────────────────────────────────── */
+.detail-body {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 340px;
+    gap: 28px; padding: 32px 24px;
+    max-width: 1200px; margin: 0 auto; align-items: start;
+}
+.detail-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+    background: var(--bg-elevated); border-radius: 16px; padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.card h2 {
+    font-size: 18px; font-weight: 700; margin: 0 0 20px;
+    display: flex; align-items: center; gap: 12px;
+}
+.card h2 i {
+    width: 36px; height: 36px; font-size: 15px; flex-shrink: 0; color: #4da6ff;
+    background: rgba(77,166,255,0.1); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Detail grid (matches participant page) ─────────────────── */
+.details-grid {
+    display: grid; grid-template-columns: repeat(2,1fr); gap: 14px;
+}
+.detail-item {
+    display: flex; align-items: flex-start; gap: 14px; padding: 16px;
+    background: rgba(255,255,255,0.02); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04); transition: border-color 0.2s;
+}
+.detail-item:hover { border-color: rgba(77,166,255,0.15); }
+.detail-item > i {
+    font-size: 15px; color: #4da6ff; width: 36px; height: 36px; flex-shrink: 0;
+    background: rgba(77,166,255,0.1); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+}
+.detail-item strong {
+    display: block; font-size: 11px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 5px;
+}
+.detail-item p { color: var(--text-primary); font-size: 14px; font-weight: 600; margin: 0; line-height: 1.4; }
+
+/* ── Registrations list ─────────────────────────────────────── */
+.reg-list { display: flex; flex-direction: column; gap: 10px; }
+.reg-item {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    background: rgba(255,255,255,0.02); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04); transition: background 0.2s, border-color 0.2s;
+}
+.reg-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(77,166,255,0.12); }
+.reg-avatar {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px;
+    background: linear-gradient(135deg, #4da6ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+}
+.reg-avatar-event { background: linear-gradient(135deg, #10b981, #4da6ff); }
+.reg-info { flex: 1; min-width: 0; }
+.reg-title { font-size: 14px; font-weight: 600; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reg-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.reg-meta span { display: flex; align-items: center; gap: 5px; }
+.reg-meta i { color: #9ca3af; }
+.reg-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+.empty-state i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 12px; display: block; }
+.empty-state p { margin: 0; font-size: 14px; }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.inline-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.badge-success  { background: rgba(16,185,129,0.12);  color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.badge-warning  { background: rgba(251,146,60,0.12);   color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+.badge-secondary{ background: rgba(156,163,175,0.12);  color: #9ca3af; border: 1px solid rgba(156,163,175,0.25); }
+.badge-danger   { background: rgba(239,68,68,0.12);    color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+.detail-sidebar { min-width: 0; }
+.sticky-card { position: sticky; top: 80px; }
+.sidebar-card { padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid rgba(255,255,255,0.06); }
+.sidebar-avatar {
+    width: 80px; height: 80px; border-radius: 18px; margin: 28px auto 14px;
+    background: linear-gradient(135deg, #4da6ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px; font-weight: 800; color: #fff;
+}
+.sidebar-avatar.avatar-inactive { filter: grayscale(1); opacity: 0.55; }
+.sidebar-name { text-align: center; font-size: 17px; font-weight: 700; padding: 0 20px 4px; }
+.sidebar-sub  { text-align: center; font-size: 13px; color: #9ca3af; padding: 0 20px; }
+.sidebar-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 18px 0; }
+.sidebar-stats { display: flex; padding: 0 24px; }
+.sidebar-stat { flex: 1; text-align: center; padding: 0 12px; }
+.sidebar-stat:first-child { border-right: 1px solid rgba(255,255,255,0.06); }
+.sidebar-stat-val   { display: block; font-size: 20px; font-weight: 800; color: #4da6ff; margin-bottom: 4px; }
+.sidebar-stat-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.4px; }
+.sidebar-actions { padding: 0 20px 4px; display: flex; flex-direction: column; gap: 10px; }
+.action-side-btn {
+    width: 100%; padding: 11px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: all 0.2s; font-family: inherit;
+}
+.btn-side-blue  { background: rgba(77,166,255,0.1);  color: #4da6ff; border: 1px solid rgba(77,166,255,0.25); }
+.btn-side-blue:hover  { background: rgba(77,166,255,0.2); }
+.btn-side-orange{ background: rgba(251,146,60,0.1);  color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
+.btn-side-orange:hover{ background: rgba(251,146,60,0.2); }
+.btn-side-green { background: rgba(16,185,129,0.1);  color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.btn-side-green:hover { background: rgba(16,185,129,0.2); }
+.btn-side-red   { background: rgba(239,68,68,0.08);  color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.btn-side-red:hover   { background: rgba(239,68,68,0.15); }
+.own-account-note {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 12px 20px; font-size: 13px; color: #9ca3af;
+}
+.sidebar-footer-info { padding: 0 20px 20px; }
+.sidebar-footer-info p {
+    display: flex; align-items: center; gap: 8px;
+    color: #9ca3af; font-size: 13px; margin: 0;
+}
+.sidebar-footer-info i { color: #4da6ff; }
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+}
+.modal-backdrop.show { display: flex; }
+.modal-box {
+    background: var(--bg-elevated); border-radius: 16px; width: 100%; max-width: 440px;
+    overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.5); animation: modalIn 0.25s ease;
+}
+.modal-box-sm { max-width: 380px; }
+@keyframes modalIn { from { opacity:0; transform: scale(0.95) translateY(-12px); } to { opacity:1; transform: scale(1) translateY(0); } }
+.modal-box-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.modal-box-header h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.modal-box-close {
+    width: 30px; height: 30px; background: rgba(255,255,255,0.06); border: none;
+    border-radius: 8px; color: #9ca3af; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s;
+}
+.modal-box-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.modal-box-body { padding: 24px; }
+.modal-box-footer {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.form-field { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-input {
+    padding: 10px 14px; width: 100%; background: var(--bg-base);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+    color: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.field-input:focus { border-color: #4da6ff; }
+.confirm-body { text-align: center; padding: 8px 0; }
+.confirm-icon {
+    width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.red-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
+.confirm-body p { margin: 0 0 8px; font-size: 15px; font-weight: 500; }
+.confirm-sub { font-size: 13px; color: #9ca3af; }
+.btn-ghost {
+    padding: 9px 18px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.btn-act-primary {
+    padding: 9px 20px; background: #4da6ff; border: none; border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+}
+.btn-act-primary:hover { background: #3b8de0; }
+.btn-act-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-act-danger {
+    padding: 9px 20px; background: #ef4444; border: none; border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+}
+.btn-act-danger:hover { background: #dc2626; }
+.btn-act-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+.toast {
+    min-width: 280px; max-width: 360px; padding: 14px 16px;
+    background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease;
+}
+.toast-success { border-left: 3px solid #10b981; }
+.toast-error   { border-left: 3px solid #ef4444; }
+.toast-info    { border-left: 3px solid #4da6ff; }
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+.toast-success .toast-icon { color: #10b981; }
+.toast-error   .toast-icon { color: #ef4444; }
+.toast-info    .toast-icon { color: #4da6ff; }
+.toast-msg   { font-size: 13px; flex: 1; font-weight: 500; }
+.toast-close { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 12px; padding: 0; }
+@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+.hidden { display: none !important; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .detail-body { grid-template-columns: 1fr; padding: 24px 16px; }
+    .sticky-card { position: static; }
+    .details-grid { grid-template-columns: 1fr; }
+    .detail-sidebar { order: -1; }
+}
+@media (max-width: 768px) {
+    .detail-hero { height: 280px; }
+    .detail-hero-content { padding: 20px; flex-direction: column; align-items: flex-start; gap: 14px; }
+    .user-hero-avatar { width: 64px; height: 64px; font-size: 26px; border-radius: 14px; }
+    .user-hero-info h1 { font-size: 22px; }
+    .hero-meta { flex-direction: column; gap: 6px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+    .detail-body { padding: 16px 12px; gap: 16px; }
+    .card { padding: 20px; }
+}
+</style>
+
+<script>
+function showToast(msg, type) {
+    type = type || 'info';
+    var icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.innerHTML = '<i class="fas ' + icons[type] + ' toast-icon"></i>' +
+                  '<span class="toast-msg">' + msg + '</span>' +
+                  '<button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(function() {
+        t.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
+    }, 4000);
+}
+function openModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function setLoading(btnId, state) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.querySelector('.btn-text').classList.toggle('hidden', state);
+    btn.querySelector('.btn-spin').classList.toggle('hidden', !state);
+    btn.disabled = state;
+}
+
+var changeRoleBtn = document.querySelector('.change-role-btn');
+if (changeRoleBtn) {
+    changeRoleBtn.addEventListener('click', function() { openModal('roleModal'); });
+}
+
+function submitRoleChange() {
+    var userId  = document.getElementById('roleUserId').value;
+    var newRole = document.getElementById('newRole').value;
+    setLoading('roleSubmitBtn', true);
+    fetch('/admin/change-role/' + userId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        setLoading('roleSubmitBtn', false);
+        if (data.success) {
+            showToast('Role updated to ' + newRole + '.', 'success');
+            closeModal('roleModal');
+            setTimeout(function() { location.reload(); }, 1200);
+        } else { showToast('Failed: ' + data.error, 'error'); }
+    })
+    .catch(function() { setLoading('roleSubmitBtn', false); showToast('Network error.', 'error'); });
+}
+
+var toggleBtn = document.querySelector('.toggle-active-btn');
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+        var userId   = this.dataset.userId;
+        var isActive = this.dataset.isActive === 'true';
+        fetch('/admin/toggle-user/' + userId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: isActive ? 'deactivate' : 'activate' })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showToast('User ' + (isActive ? 'deactivated' : 'activated') + '.', 'success');
+                setTimeout(function() { location.reload(); }, 1200);
+            } else { showToast('Failed: ' + (data.error || 'Unknown'), 'error'); }
+        })
+        .catch(function() { showToast('Network error.', 'error'); });
+    });
+}
+
+var deleteBtn = document.querySelector('.delete-user-btn');
+if (deleteBtn) {
+    deleteBtn.addEventListener('click', function() { openModal('deleteModal'); });
+}
+
+function confirmDelete(userId) {
+    setLoading('deleteSubmitBtn', true);
+    fetch('/admin/delete-user/' + userId, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        setLoading('deleteSubmitBtn', false);
+        if (data.success) {
+            showToast('User deleted.', 'success');
+            setTimeout(function() { window.location.href = '/admin/users'; }, 1200);
+        } else { showToast('Failed: ' + data.error, 'error'); }
+    })
+    .catch(function() { setLoading('deleteSubmitBtn', false); showToast('Network error.', 'error'); });
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(function(el) {
+    el.addEventListener('click', function(e) { if (e.target === el) el.classList.remove('show'); });
+});
+</script>
+{% endblock %}

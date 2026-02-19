@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check user role
+    function hasRole(role) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    // Users collection - users can only read/update their own data
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Admins can read all users
+      allow read: if hasRole('admin');
+    }
+    
+    // Events collection
+    match /events/{eventId} {
+      // Anyone can read public events
+      allow read: if true;
+      
+      // Only organizers and admins can create/update events
+      allow create: if hasRole('organizer') || hasRole('admin');
+      allow update: if hasRole('organizer') || hasRole('admin');
+      allow delete: if hasRole('admin');
+      
+      // Real-time seat availability
+      match /realtime/{document=**} {
+        allow read: if true;  // Public read for seat availability
+        allow write: if hasRole('organizer') || hasRole('admin');
+      }
+    }
+    
+    // Registrations collection
+    match /registrations/{registrationId} {
+      // Users can read their own registrations
+      allow read: if isAuthenticated() && 
+                     resource.data.user_id == request.auth.uid;
+      
+      // Users can create registrations
+      allow create: if isAuthenticated();
+      
+      // Only owner can cancel
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.user_id == request.auth.uid;
+      
+      // Organizers can view all registrations for their events
+      allow read: if hasRole('organizer');
+    }
+    
+    // Chat messages (real-time feature)
+    match /chats/{eventId}/messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if request.auth.uid == resource.data.user_id;
+    }
+  }
+}

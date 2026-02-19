@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} – Event Details - EventHub{% endblock %}
+{% block page_title %}Event Details{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+
+    <!-- ── Hero (matches participant/event_details style) ──── -->
+    <div class="detail-hero event-hero"
+         {% if event.image %}
+         style="--hero-bg: url('{{ url_for('static', filename='uploads/events/' + event.image) }}')"
+         {% endif %}>
+        {% if event.image %}
+            <img src="{{ url_for('static', filename='uploads/events/' + event.image) }}"
+                 alt="{{ event.title }}" class="event-hero-img">
+        {% endif %}
+        <div class="detail-hero-overlay">
+            <div class="detail-hero-content">
+                <span class="event-category-badge">{{ event.category or 'Event' }}</span>
+                <h1>{{ event.title }}</h1>
+                <div class="hero-meta">
+                    <span><i class="fas fa-user-tie"></i> {{ event.organizer.name if event.organizer else '—' }}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> {{ event.location or '—' }}</span>
+                    <span><i class="fas fa-users"></i> {{ event.max_participants - event.available_seats }} registered</span>
+                    {% if event.is_paid %}
+                    <span><i class="fas fa-rupee-sign"></i> ₹{{ event.price|round|int }}</span>
+                    {% else %}
+                    <span class="inline-badge badge-success" style="font-size:12px;">FREE</span>
+                    {% endif %}
+                    <span class="inline-badge {{ 'badge-success' if event.is_active else 'badge-warning' }}">
+                        {{ 'Active' if event.is_active else 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Body ──────────────────────────────────────────────── -->
+    <div class="detail-body">
+
+        <!-- Main -->
+        <div class="detail-main">
+
+            <!-- About -->
+            <div class="card">
+                <h2><i class="fas fa-info-circle"></i> About This Event</h2>
+                <p class="card-body-text">{{ event.description or 'No description provided.' }}</p>
+            </div>
+
+            <!-- Event details grid -->
+            <div class="card">
+                <h2><i class="fas fa-calendar-alt"></i> Event Details</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <strong>Date</strong>
+                            <p>{{ event.event_date.strftime('%A, %d %B %Y') if event.event_date else '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <strong>Time</strong>
+                            <p>{{ event.event_date.strftime('%I:%M %p') if event.event_date else '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Location</strong>
+                            <p>{{ event.location or '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-tag"></i>
+                        <div>
+                            <strong>Category</strong>
+                            <p>{{ event.category or '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-times"></i>
+                        <div>
+                            <strong>Registration Deadline</strong>
+                            <p>{{ event.registration_deadline.strftime('%d %b %Y, %I:%M %p') if event.registration_deadline else '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-plus"></i>
+                        <div>
+                            <strong>Created On</strong>
+                            <p>{{ event.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registrations -->
+            <div class="card">
+                <h2><i class="fas fa-ticket-alt"></i> Registrations ({{ registrations|length }})</h2>
+                {% if registrations %}
+                <div class="reg-list">
+                    {% for reg in registrations %}
+                    <div class="reg-item">
+                        <div class="reg-avatar">
+                            {{ reg.user.name[0]|upper if reg.user else '?' }}
+                        </div>
+                        <div class="reg-info">
+                            <p class="reg-title">{{ reg.user.name if reg.user else 'User deleted' }}</p>
+                            <p class="reg-meta">
+                                <span><i class="fas fa-envelope"></i> {{ reg.user.email if reg.user else '—' }}</span>
+                                <span><i class="fas fa-clock"></i> {{ reg.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+                            </p>
+                        </div>
+                        <div class="reg-badges">
+                            <span class="inline-badge {{ 'badge-success' if reg.status == 'confirmed' else 'badge-warning' if reg.status == 'waitlist' else 'badge-secondary' }}">
+                                {{ reg.status|capitalize }}
+                            </span>
+                            <span class="inline-badge badge-secondary">
+                                {{ reg.payment_status|replace('_',' ')|capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>No registrations yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+        </div><!-- /detail-main -->
+
+        <!-- Sidebar -->
+        <div class="detail-sidebar">
+            <div class="card sticky-card sidebar-card">
+
+                <!-- Capacity progress -->
+                <div class="sidebar-price-block">
+                    {% if event.is_paid %}
+                    <span class="sidebar-price">₹{{ event.price|round|int }}</span>
+                    <span class="sidebar-price-sub">per person</span>
+                    {% else %}
+                    <span class="sidebar-price">FREE</span>
+                    {% endif %}
+                </div>
+
+                <div class="sidebar-seats-block">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="seats-text">
+                        <strong>{{ event.available_seats }}</strong> of {{ event.max_participants }} seats available
+                    </p>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <!-- Quick stats -->
+                <div class="sidebar-stats">
+                    <div class="sidebar-stat">
+                        <span class="sidebar-stat-val">{{ event.max_participants - event.available_seats }}</span>
+                        <span class="sidebar-stat-label">Registered</span>
+                    </div>
+                    <div class="sidebar-stat">
+                        <span class="sidebar-stat-val">{{ event.available_seats }}</span>
+                        <span class="sidebar-stat-label">Remaining</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <!-- Admin actions -->
+                <div class="sidebar-actions">
+                    <button class="action-side-btn {{ 'btn-side-orange' if event.is_active else 'btn-side-green' }} toggle-event-btn"
+                            data-event-id="{{ event.id }}"
+                            data-is-active="{{ 'true' if event.is_active else 'false' }}">
+                        <i class="fas fa-{{ 'ban' if event.is_active else 'check-circle' }}"></i>
+                        {{ 'Deactivate Event' if event.is_active else 'Activate Event' }}
+                    </button>
+                    <button class="action-side-btn btn-side-red delete-event-btn"
+                            data-event-id="{{ event.id }}"
+                            data-event-title="{{ event.title }}">
+                        <i class="fas fa-trash"></i> Delete Event
+                    </button>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="sidebar-footer-info">
+                    <p><i class="fas fa-calendar-times"></i>
+                        Reg. closes {{ event.registration_deadline.strftime('%d %b, %I:%M %p') if event.registration_deadline else '—' }}
+                    </p>
+                    <p><i class="fas fa-user-tie"></i>
+                        {{ event.organizer.name if event.organizer else '—' }}
+                    </p>
+                </div>
+
+            </div>
+        </div><!-- /detail-sidebar -->
+
+    </div><!-- /detail-body -->
+</div><!-- /detail-container -->
+
+<!-- Delete Modal -->
+<div class="modal-backdrop" id="deleteModal">
+    <div class="modal-box modal-box-sm">
+        <div class="modal-box-header">
+            <h3>Delete Event</h3>
+            <button class="modal-box-close" onclick="closeModal('deleteModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-box-body">
+            <div class="confirm-body">
+                <div class="confirm-icon red-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <p>Delete <strong id="deleteEventTitle"></strong>?</p>
+                <p class="confirm-sub">All registrations for this event will also be permanently removed. This cannot be undone.</p>
+            </div>
+            <input type="hidden" id="deleteEventId">
+        </div>
+        <div class="modal-box-footer">
+            <button onclick="closeModal('deleteModal')" class="btn-ghost">Cancel</button>
+            <button onclick="confirmDelete()" class="btn-act-danger" id="deleteSubmitBtn">
+                <span class="btn-text"><i class="fas fa-trash"></i> Delete Event</span>
+                <span class="btn-spin hidden"><i class="fas fa-spinner fa-spin"></i></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer" class="toast-wrap"></div>
+
+<style>
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+img { max-width: 100%; display: block; }
+
+/* ── Container ──────────────────────────────────────────────── */
+.detail-container { width: 100%; overflow-x: hidden; margin: 0; }
+
+/* ── Hero (mirrors participant/event_details exactly) ───────── */
+.detail-hero {
+    position: relative; height: 480px; overflow: hidden;
+    background: #060b14; display: flex; align-items: center; justify-content: center;
+}
+.event-hero::before {
+    content: '';
+    position: absolute; inset: -20px;
+    background-image: var(--hero-bg, linear-gradient(135deg, #0d2340 0%, #1a0d2e 50%, #0a1628 100%));
+    background-size: cover; background-position: center;
+    filter: blur(28px) brightness(0.3) saturate(1.4);
+    transform: scale(1.1); z-index: 0;
+}
+.event-hero-img {
+    position: relative; z-index: 1;
+    max-width: 100%; max-height: 100%; width: auto; height: auto;
+    object-fit: contain; display: block;
+}
+.detail-hero-overlay {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%);
+    display: flex; align-items: flex-end;
+}
+.detail-hero-content {
+    position: relative; z-index: 3;
+    padding: 32px 36px; width: 100%;
+}
+.event-category-badge {
+    display: inline-block; padding: 5px 14px;
+    background: rgba(77,166,255,0.2); backdrop-filter: blur(10px);
+    border: 1px solid rgba(77,166,255,0.35); border-radius: 999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #4da6ff; margin-bottom: 12px;
+}
+.detail-hero-content h1 {
+    font-size: 36px; font-weight: 800; margin: 0 0 14px; line-height: 1.2;
+    word-break: break-word; color: white; text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.hero-meta {
+    display: flex; gap: 22px; flex-wrap: wrap; align-items: center;
+    color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 500;
+}
+.hero-meta span { display: flex; align-items: center; gap: 7px; }
+.hero-meta i { color: #4da6ff; font-size: 13px; }
+
+/* ── Body ───────────────────────────────────────────────────── */
+.detail-body {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 360px;
+    gap: 28px; padding: 32px 24px;
+    max-width: 1200px; margin: 0 auto; align-items: start;
+}
+.detail-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+    background: var(--bg-elevated); border-radius: 16px; padding: 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.card h2 {
+    font-size: 18px; font-weight: 700; margin: 0 0 20px;
+    display: flex; align-items: center; gap: 12px;
+}
+.card h2 i {
+    width: 36px; height: 36px; font-size: 15px; flex-shrink: 0; color: #4da6ff;
+    background: rgba(77,166,255,0.1); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+}
+.card-body-text {
+    color: var(--text-secondary); line-height: 1.8; font-size: 15px; margin: 0; white-space: pre-wrap;
+}
+
+/* ── Detail grid ────────────────────────────────────────────── */
+.details-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.detail-item {
+    display: flex; align-items: flex-start; gap: 14px; padding: 16px;
+    background: rgba(255,255,255,0.02); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04); transition: border-color 0.2s;
+}
+.detail-item:hover { border-color: rgba(77,166,255,0.15); }
+.detail-item > i {
+    font-size: 15px; color: #4da6ff; width: 36px; height: 36px; flex-shrink: 0;
+    background: rgba(77,166,255,0.1); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+}
+.detail-item strong {
+    display: block; font-size: 11px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 5px;
+}
+.detail-item p { color: var(--text-primary); font-size: 14px; font-weight: 600; margin: 0; line-height: 1.4; }
+
+/* ── Registrations ──────────────────────────────────────────── */
+.reg-list { display: flex; flex-direction: column; gap: 10px; }
+.reg-item {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    background: rgba(255,255,255,0.02); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04); transition: background 0.2s, border-color 0.2s;
+}
+.reg-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(77,166,255,0.12); }
+.reg-avatar {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px;
+    background: linear-gradient(135deg, #4da6ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+}
+.reg-info { flex: 1; min-width: 0; }
+.reg-title { font-size: 14px; font-weight: 600; margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reg-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-tertiary); margin: 0; }
+.reg-meta span { display: flex; align-items: center; gap: 5px; }
+.reg-meta i { color: #9ca3af; }
+.reg-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+.empty-state i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 12px; display: block; }
+.empty-state p { margin: 0; font-size: 14px; }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.inline-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.badge-success  { background: rgba(16,185,129,0.12);  color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.badge-warning  { background: rgba(251,146,60,0.12);   color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+.badge-secondary{ background: rgba(156,163,175,0.12);  color: #9ca3af; border: 1px solid rgba(156,163,175,0.25); }
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+.detail-sidebar { min-width: 0; }
+.sticky-card { position: sticky; top: 80px; }
+.sidebar-card { padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid rgba(255,255,255,0.06); }
+
+.sidebar-price-block { text-align: center; padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.sidebar-price { display: block; font-size: 42px; font-weight: 800; color: #4da6ff; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+.sidebar-price-sub { font-size: 13px; color: #9ca3af; }
+
+.sidebar-seats-block { padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.progress-bar { height: 6px; background: rgba(255,255,255,0.07); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4da6ff, #a78bfa); transition: width 0.4s ease; }
+.seats-text { font-size: 13px; color: var(--text-secondary); text-align: center; margin: 0; }
+
+.sidebar-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 0; }
+.sidebar-stats { display: flex; padding: 18px 24px; }
+.sidebar-stat { flex: 1; text-align: center; padding: 0 12px; }
+.sidebar-stat:first-child { border-right: 1px solid rgba(255,255,255,0.06); }
+.sidebar-stat-val   { display: block; font-size: 22px; font-weight: 800; color: #4da6ff; margin-bottom: 4px; }
+.sidebar-stat-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.sidebar-actions { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.action-side-btn {
+    width: 100%; padding: 11px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: all 0.2s; font-family: inherit;
+}
+.btn-side-orange{ background: rgba(251,146,60,0.1);  color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
+.btn-side-orange:hover{ background: rgba(251,146,60,0.2); }
+.btn-side-green { background: rgba(16,185,129,0.1);  color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.btn-side-green:hover { background: rgba(16,185,129,0.2); }
+.btn-side-red   { background: rgba(239,68,68,0.08);  color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.btn-side-red:hover   { background: rgba(239,68,68,0.15); }
+
+.sidebar-footer-info { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 8px; }
+.sidebar-footer-info p {
+    display: flex; align-items: center; gap: 9px;
+    color: #9ca3af; font-size: 13px; margin: 0; line-height: 1.5;
+}
+.sidebar-footer-info i { color: #fb923c; flex-shrink: 0; }
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+}
+.modal-backdrop.show { display: flex; }
+.modal-box {
+    background: var(--bg-elevated); border-radius: 16px; width: 100%; max-width: 440px;
+    overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.5); animation: modalIn 0.25s ease;
+}
+.modal-box-sm { max-width: 380px; }
+@keyframes modalIn { from { opacity:0; transform: scale(0.95) translateY(-12px); } to { opacity:1; transform: scale(1) translateY(0); } }
+.modal-box-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.modal-box-header h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.modal-box-close {
+    width: 30px; height: 30px; background: rgba(255,255,255,0.06); border: none;
+    border-radius: 8px; color: #9ca3af; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s;
+}
+.modal-box-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.modal-box-body { padding: 24px; }
+.modal-box-footer {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.confirm-body { text-align: center; padding: 8px 0; }
+.confirm-icon {
+    width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.red-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
+.confirm-body p { margin: 0 0 8px; font-size: 15px; font-weight: 500; }
+.confirm-sub { font-size: 13px; color: #9ca3af; }
+.btn-ghost {
+    padding: 9px 18px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.btn-act-danger {
+    padding: 9px 20px; background: #ef4444; border: none; border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+}
+.btn-act-danger:hover { background: #dc2626; }
+.btn-act-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+.toast {
+    min-width: 280px; max-width: 360px; padding: 14px 16px;
+    background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease;
+}
+.toast-success { border-left: 3px solid #10b981; }
+.toast-error   { border-left: 3px solid #ef4444; }
+.toast-info    { border-left: 3px solid #4da6ff; }
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+.toast-success .toast-icon { color: #10b981; }
+.toast-error   .toast-icon { color: #ef4444; }
+.toast-info    .toast-icon { color: #4da6ff; }
+.toast-msg   { font-size: 13px; flex: 1; font-weight: 500; }
+.toast-close { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 12px; padding: 0; }
+@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+.hidden { display: none !important; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .detail-body { grid-template-columns: 1fr; padding: 24px 16px; }
+    .sticky-card { position: static; }
+    .details-grid { grid-template-columns: 1fr; }
+    .detail-sidebar { order: -1; }
+}
+@media (max-width: 768px) {
+    .detail-hero { height: 300px; }
+    .detail-hero-content { padding: 20px; }
+    .detail-hero-content h1 { font-size: 22px; }
+    .hero-meta { flex-direction: column; gap: 8px; font-size: 13px; }
+}
+@media (max-width: 480px) {
+    .detail-body { padding: 16px 12px; gap: 16px; }
+    .card { padding: 20px; }
+    .sidebar-price { font-size: 34px; }
+}
+</style>
+
+<script>
+// Progress bar on load
+(function() {
+    var available = {{ event.available_seats }};
+    var total     = {{ event.max_participants }};
+    var pct       = total > 0 ? Math.round(((total - available) / total) * 100) : 0;
+    var fill = document.getElementById('progressFill');
+    if (fill) {
+        fill.style.width = pct + '%';
+        if (available <= 5)
+            fill.style.background = 'linear-gradient(90deg,#ef4444,#dc2626)';
+        else if (available <= Math.floor(total * 0.25))
+            fill.style.background = 'linear-gradient(90deg,#f59e0b,#d97706)';
+    }
+})();
+
+function showToast(msg, type) {
+    type = type || 'info';
+    var icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.innerHTML = '<i class="fas ' + icons[type] + ' toast-icon"></i>' +
+                  '<span class="toast-msg">' + msg + '</span>' +
+                  '<button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(function() {
+        t.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
+    }, 4000);
+}
+function openModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function setLoading(btnId, state) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.querySelector('.btn-text').classList.toggle('hidden', state);
+    btn.querySelector('.btn-spin').classList.toggle('hidden', !state);
+    btn.disabled = state;
+}
+
+var toggleBtn = document.querySelector('.toggle-event-btn');
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+        var eventId  = this.dataset.eventId;
+        var isActive = this.dataset.isActive === 'true';
+        fetch('/admin/toggle-event/' + eventId, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showToast('Event ' + (data.is_active ? 'activated' : 'deactivated') + '.', 'success');
+                setTimeout(function() { location.reload(); }, 1200);
+            } else { showToast('Failed: ' + (data.error || 'Unknown'), 'error'); }
+        })
+        .catch(function() { showToast('Network error.', 'error'); });
+    });
+}
+
+var deleteBtn = document.querySelector('.delete-event-btn');
+if (deleteBtn) {
+    deleteBtn.addEventListener('click', function() {
+        document.getElementById('deleteEventId').value          = this.dataset.eventId;
+        document.getElementById('deleteEventTitle').textContent = this.dataset.eventTitle;
+        openModal('deleteModal');
+    });
+}
+
+function confirmDelete() {
+    var eventId = document.getElementById('deleteEventId').value;
+    setLoading('deleteSubmitBtn', true);
+    fetch('/admin/delete-event/' + eventId, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        setLoading('deleteSubmitBtn', false);
+        if (data.success) {
+            showToast('Event deleted.', 'success');
+            setTimeout(function() { window.location.href = '/admin/events'; }, 1200);
+        } else { showToast('Failed: ' + data.error, 'error'); }
+    })
+    .catch(function() { setLoading('deleteSubmitBtn', false); showToast('Network error.', 'error'); });
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(function(el) {
+    el.addEventListener('click', function(e) { if (e.target === el) el.classList.remove('show'); });
+});
+</script>
+{% endblock %}

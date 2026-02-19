@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - EventHub{% endblock %}
+{% block page_title %}Manage Users{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Total Users</span>
+            <h3 class="stat-number">{{ users|length }}</h3>
+            <span class="stat-trend">All registered</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-user"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Participants</span>
+            <h3 class="stat-number">{{ users|selectattr('role','equalto','participant')|list|length }}</h3>
+            <span class="stat-trend">Event attendees</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange"><i class="fas fa-user-tie"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Organizers</span>
+            <h3 class="stat-number">{{ users|selectattr('role','equalto','organizer')|list|length }}</h3>
+            <span class="stat-trend">Event hosts</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-user-shield"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Admins</span>
+            <h3 class="stat-number">{{ users|selectattr('role','equalto','admin')|list|length }}</h3>
+            <span class="stat-trend">Platform managers</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fas fa-user-slash"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Deactivated</span>
+            <h3 class="stat-number">{{ users|rejectattr('is_active')|list|length }}</h3>
+            <span class="stat-trend">Suspended accounts</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div class="filter-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search by name or email…">
+    </div>
+    <select id="roleFilter" class="filter-select">
+        <option value="">All Roles</option>
+        <option value="participant">Participant</option>
+        <option value="organizer">Organizer</option>
+        <option value="admin">Admin</option>
+    </select>
+    <select id="statusFilter" class="filter-select">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+    </select>
+    <span class="filter-count" id="rowCount"></span>
+</div>
+
+<!-- Table -->
+<div class="data-card">
+    <div class="data-card-header">
+        <h3>All Users</h3>
+    </div>
+    <div class="data-table-wrapper">
+        <table class="data-table" id="usersTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr id="user-row-{{ user.id }}"
+                    data-name="{{ user.name }}"
+                    data-email="{{ user.email }}"
+                    data-role="{{ user.role }}"
+                    data-status="{{ 'active' if user.is_active else 'inactive' }}">
+                    <td>
+                        <div class="entity-info">
+                            <div class="entity-avatar {{ 'avatar-dim' if not user.is_active }}">
+                                {{ user.name[0]|upper }}
+                            </div>
+                            <span class="entity-name">{{ user.name }}</span>
+                        </div>
+                    </td>
+                    <td class="cell-muted">{{ user.email }}</td>
+                    <td class="cell-muted">{{ user.phone or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'purple' if user.role == 'admin' else 'blue' if user.role == 'organizer' else 'warning' }}">
+                            {{ user.role|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if user.is_active else 'secondary' }}"
+                              id="status-badge-{{ user.id }}">
+                            {{ 'Active' if user.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td class="cell-muted">{{ user.created_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="action-btn view-user-btn"
+                                    data-user-id="{{ user.id }}" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if user.id != current_user.id %}
+                            <button class="action-btn change-role-btn"
+                                    data-user-id="{{ user.id }}"
+                                    data-current-role="{{ user.role }}" title="Change Role">
+                                <i class="fas fa-user-cog"></i>
+                            </button>
+                            <button class="action-btn toggle-active-btn"
+                                    data-user-id="{{ user.id }}"
+                                    data-is-active="{{ 'true' if user.is_active else 'false' }}"
+                                    title="{{ 'Deactivate' if user.is_active else 'Activate' }} User">
+                                <i class="fas fa-{{ 'ban' if user.is_active else 'check-circle' }}"></i>
+                            </button>
+                            <button class="action-btn action-danger delete-user-btn"
+                                    data-user-id="{{ user.id }}"
+                                    data-user-name="{{ user.name }}" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="no-data">No users found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Change Role Modal -->
+<div class="modal-backdrop" id="roleModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <h3>Change User Role</h3>
+            <button class="modal-box-close" onclick="closeModal('roleModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-box-body">
+            <input type="hidden" id="roleUserId">
+            <div class="form-field">
+                <label class="field-label">Select New Role</label>
+                <select id="newRole" class="field-input">
+                    <option value="participant">Participant</option>
+                    <option value="organizer">Organizer</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-box-footer">
+            <button onclick="closeModal('roleModal')" class="btn-ghost">Cancel</button>
+            <button onclick="submitRoleChange()" class="btn-primary-sm" id="roleSubmitBtn">
+                <span class="btn-text">Update Role</span>
+                <span class="btn-spin hidden"><i class="fas fa-spinner fa-spin"></i></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-backdrop" id="deleteModal">
+    <div class="modal-box modal-box-sm">
+        <div class="modal-box-header">
+            <h3>Delete User</h3>
+            <button class="modal-box-close" onclick="closeModal('deleteModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-box-body">
+            <div class="confirm-body">
+                <div class="confirm-icon red-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <p>Delete <strong id="deleteUserName"></strong>?</p>
+                <p class="confirm-sub">This permanently removes the user and all their registrations. This cannot be undone.</p>
+            </div>
+            <input type="hidden" id="deleteUserId">
+        </div>
+        <div class="modal-box-footer">
+            <button onclick="closeModal('deleteModal')" class="btn-ghost">Cancel</button>
+            <button onclick="confirmDelete()" class="btn-danger-sm" id="deleteSubmitBtn">
+                <span class="btn-text"><i class="fas fa-trash"></i> Delete User</span>
+                <span class="btn-spin hidden"><i class="fas fa-spinner fa-spin"></i></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer" class="toast-wrap"></div>
+
+<style>
+/* ── Stats ────────────────────────────────────────────────── */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+.stat-card {
+    background: var(--bg-elevated);
+    border-radius: 12px; padding: 22px;
+    display: flex; gap: 16px; align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+.stat-icon {
+    width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.stat-icon.blue   { background: rgba(77,166,255,0.12);  color: #4da6ff; }
+.stat-icon.purple { background: rgba(168,85,247,0.12);  color: #a855f7; }
+.stat-icon.green  { background: rgba(16,185,129,0.12);  color: #10b981; }
+.stat-icon.orange { background: rgba(251,146,60,0.12);  color: #fb923c; }
+.stat-icon.red    { background: rgba(239,68,68,0.12);   color: #ef4444; }
+.stat-info { flex: 1; min-width: 0; }
+.stat-label  { display: block; font-size: 11px; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.stat-number { font-size: 26px; font-weight: 800; letter-spacing: -1px; margin: 0 0 4px; }
+.stat-trend  { font-size: 12px; color: #9ca3af; }
+
+/* ── Filter bar ────────────────────────────────────────────── */
+.filter-bar {
+    display: flex; gap: 12px; margin-bottom: 20px;
+    flex-wrap: wrap; align-items: center;
+}
+.filter-search {
+    flex: 1; min-width: 220px; position: relative;
+    display: flex; align-items: center;
+}
+.filter-search i {
+    position: absolute; left: 14px; color: #9ca3af;
+    font-size: 13px; pointer-events: none;
+}
+.filter-search input {
+    width: 100%; padding: 10px 14px 10px 38px;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; color: inherit; font-size: 14px;
+    outline: none; transition: border-color 0.2s;
+}
+.filter-search input:focus { border-color: #4da6ff; }
+.filter-select {
+    padding: 10px 14px; min-width: 150px;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; color: inherit;
+    font-size: 14px; outline: none; cursor: pointer;
+    transition: border-color 0.2s;
+}
+.filter-select:focus { border-color: #4da6ff; }
+.filter-count { font-size: 12px; color: #9ca3af; white-space: nowrap; }
+
+/* ── Data card (matches dashboard exactly) ─────────────────── */
+.data-card {
+    background: var(--bg-elevated);
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+}
+.data-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.data-card-header h3 { font-size: 17px; font-weight: 700; margin: 0; }
+.data-table-wrapper { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.data-table th {
+    text-align: left; padding: 12px 16px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-tertiary); white-space: nowrap;
+}
+.data-table td {
+    padding: 14px 16px; font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+}
+.data-table tbody tr { transition: background 0.2s; }
+.data-table tbody tr:hover { background: var(--bg-elevated-2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.no-data { text-align: center; padding: 48px 20px !important; color: #9ca3af; font-size: 14px; }
+.cell-muted { color: #9ca3af; font-size: 13px; }
+
+/* ── Entity cell ───────────────────────────────────────────── */
+.entity-info { display: flex; align-items: center; gap: 12px; }
+.entity-avatar {
+    width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px;
+    background: linear-gradient(135deg, #4da6ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff;
+}
+.entity-avatar.avatar-dim { filter: grayscale(1); opacity: 0.45; }
+.entity-name { font-weight: 500; font-size: 14px; }
+
+/* ── Row actions ───────────────────────────────────────────── */
+.row-actions { display: flex; gap: 6px; align-items: center; }
+.action-btn {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; color: #9ca3af; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.action-btn:hover { background: rgba(77,166,255,0.15); color: #4da6ff; border-color: rgba(77,166,255,0.3); }
+.action-btn.action-danger:hover { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
+/* ── Badges ────────────────────────────────────────────────── */
+.badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.3px; white-space: nowrap;
+}
+.badge-success  { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.badge-warning  { background: rgba(251,146,60,0.12);  color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
+.badge-blue     { background: rgba(77,166,255,0.12);  color: #4da6ff; border: 1px solid rgba(77,166,255,0.25); }
+.badge-purple   { background: rgba(168,85,247,0.12);  color: #a855f7; border: 1px solid rgba(168,85,247,0.25); }
+.badge-danger   { background: rgba(239,68,68,0.12);   color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.badge-secondary{ background: rgba(156,163,175,0.1);  color: #9ca3af; border: 1px solid rgba(156,163,175,0.2); }
+
+/* ── Modal ─────────────────────────────────────────────────── */
+.modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+}
+.modal-backdrop.show { display: flex; }
+.modal-box {
+    background: var(--bg-elevated); border-radius: 16px;
+    width: 100%; max-width: 440px; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    animation: modalIn 0.25s ease;
+}
+.modal-box-sm { max-width: 380px; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(-12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-box-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.modal-box-header h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.modal-box-close {
+    width: 30px; height: 30px; background: rgba(255,255,255,0.06);
+    border: none; border-radius: 8px; color: #9ca3af; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+.modal-box-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.modal-box-body { padding: 24px; }
+.modal-box-footer {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Form inside modal */
+.form-field { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-input {
+    padding: 10px 14px; width: 100%;
+    background: var(--bg-base);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; color: inherit; font-size: 14px;
+    outline: none; transition: border-color 0.2s;
+}
+.field-input:focus { border-color: #4da6ff; }
+
+/* Confirm dialog */
+.confirm-body { text-align: center; padding: 8px 0; }
+.confirm-icon {
+    width: 56px; height: 56px; margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.red-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
+.confirm-body p { margin: 0 0 8px; font-size: 15px; font-weight: 500; }
+.confirm-sub { font-size: 13px; color: #9ca3af; }
+
+/* Buttons */
+.btn-ghost {
+    padding: 9px 18px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; color: #9ca3af;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.btn-primary-sm {
+    padding: 9px 20px; background: #4da6ff; border: none;
+    border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.2s;
+}
+.btn-primary-sm:hover    { background: #3b8de0; }
+.btn-primary-sm:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-danger-sm {
+    padding: 9px 20px; background: #ef4444; border: none;
+    border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.2s;
+}
+.btn-danger-sm:hover    { background: #dc2626; }
+.btn-danger-sm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.toast-wrap {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 10px; z-index: 9999;
+}
+.toast {
+    min-width: 280px; max-width: 360px; padding: 14px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: toastIn 0.3s ease;
+}
+.toast-success { border-left: 3px solid #10b981; }
+.toast-error   { border-left: 3px solid #ef4444; }
+.toast-info    { border-left: 3px solid #4da6ff; }
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+.toast-success .toast-icon { color: #10b981; }
+.toast-error   .toast-icon { color: #ef4444; }
+.toast-info    .toast-icon { color: #4da6ff; }
+.toast-msg   { font-size: 13px; flex: 1; font-weight: 500; }
+.toast-close { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 12px; padding: 0; }
+@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0);    opacity: 1; } }
+@keyframes toastOut { from { transform: translateX(0);    opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+
+.hidden { display: none !important; }
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+    .dashboard-stats { grid-template-columns: 1fr; }
+    .filter-bar { flex-direction: column; }
+    .filter-search, .filter-select { width: 100%; min-width: unset; }
+}
+</style>
+
+<script>
+const TOTAL_USERS = {{ users|length }};
+
+function showToast(msg, type) {
+    type = type || 'info';
+    var icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.innerHTML = '<i class="fas ' + icons[type] + ' toast-icon"></i>' +
+                  '<span class="toast-msg">' + msg + '</span>' +
+                  '<button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(function() {
+        t.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
+    }, 4000);
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function setLoading(btnId, state) {
+    var btn = document.getElementById(btnId);
+    btn.querySelector('.btn-text').classList.toggle('hidden', state);
+    btn.querySelector('.btn-spin').classList.toggle('hidden', !state);
+    btn.disabled = state;
+}
+
+function updateRowCount() {
+    var visible = Array.from(document.querySelectorAll('#usersTable tbody tr'))
+        .filter(function(r) { return r.style.display !== 'none' && !r.querySelector('.no-data'); }).length;
+    document.getElementById('rowCount').textContent =
+        'Showing ' + visible + ' of ' + TOTAL_USERS + ' user' + (TOTAL_USERS !== 1 ? 's' : '');
+}
+
+function filterTable() {
+    var s  = document.getElementById('searchInput').value.toLowerCase();
+    var r  = document.getElementById('roleFilter').value;
+    var st = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#usersTable tbody tr').forEach(function(row) {
+        if (row.querySelector('.no-data')) return;
+        var ok = (row.dataset.name.toLowerCase().includes(s) || row.dataset.email.toLowerCase().includes(s)) &&
+                 (!r  || row.dataset.role   === r) &&
+                 (!st || row.dataset.status === st);
+        row.style.display = ok ? '' : 'none';
+    });
+    updateRowCount();
+}
+document.getElementById('searchInput').addEventListener('keyup', filterTable);
+document.getElementById('roleFilter').addEventListener('change', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+updateRowCount();
+
+document.addEventListener('click', function(e) {
+    var v = e.target.closest('.view-user-btn');
+    var r = e.target.closest('.change-role-btn');
+    var t = e.target.closest('.toggle-active-btn');
+    var d = e.target.closest('.delete-user-btn');
+    if (v) window.location.href = '/admin/user-details/' + v.dataset.userId;
+    if (r) openRoleModal(r.dataset.userId, r.dataset.currentRole);
+    if (t) toggleActive(t);
+    if (d) openDeleteModal(d.dataset.userId, d.dataset.userName);
+});
+
+function openRoleModal(userId, currentRole) {
+    document.getElementById('roleUserId').value = userId;
+    document.getElementById('newRole').value    = currentRole;
+    openModal('roleModal');
+}
+function submitRoleChange() {
+    var userId  = document.getElementById('roleUserId').value;
+    var newRole = document.getElementById('newRole').value;
+    setLoading('roleSubmitBtn', true);
+    fetch('/admin/change-role/' + userId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        setLoading('roleSubmitBtn', false);
+        if (data.success) {
+            showToast('Role updated to ' + newRole + '.', 'success');
+            closeModal('roleModal');
+            setTimeout(function() { location.reload(); }, 1200);
+        } else { showToast('Failed: ' + data.error, 'error'); }
+    })
+    .catch(function() { setLoading('roleSubmitBtn', false); showToast('Network error.', 'error'); });
+}
+
+function toggleActive(btn) {
+    var userId   = btn.dataset.userId;
+    var isActive = btn.dataset.isActive === 'true';
+    fetch('/admin/toggle-user/' + userId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: isActive ? 'deactivate' : 'activate' })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            var na    = !isActive;
+            var row   = document.getElementById('user-row-' + userId);
+            var badge = document.getElementById('status-badge-' + userId);
+            var icon  = btn.querySelector('i');
+            badge.textContent    = na ? 'Active' : 'Inactive';
+            badge.className      = 'badge badge-' + (na ? 'success' : 'secondary');
+            icon.className       = 'fas fa-' + (na ? 'ban' : 'check-circle');
+            btn.title            = (na ? 'Deactivate' : 'Activate') + ' User';
+            btn.dataset.isActive = String(na);
+            row.dataset.status   = na ? 'active' : 'inactive';
+            var av = row.querySelector('.entity-avatar');
+            if (av) av.classList.toggle('avatar-dim', !na);
+            showToast('User ' + (na ? 'activated' : 'deactivated') + '.', 'success');
+        } else { showToast('Failed: ' + (data.error || 'Unknown error'), 'error'); }
+    })
+    .catch(function() { showToast('Network error.', 'error'); });
+}
+
+function openDeleteModal(userId, userName) {
+    document.getElementById('deleteUserId').value         = userId;
+    document.getElementById('deleteUserName').textContent = userName;
+    openModal('deleteModal');
+}
+function confirmDelete() {
+    var userId = document.getElementById('deleteUserId').value;
+    setLoading('deleteSubmitBtn', true);
+    fetch('/admin/delete-user/' + userId, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        setLoading('deleteSubmitBtn', false);
+        if (data.success) {
+            closeModal('deleteModal');
+            showToast('User deleted.', 'success');
+            var row = document.getElementById('user-row-' + userId);
+            if (row) row.remove();
+            updateRowCount();
+        } else { showToast('Failed: ' + data.error, 'error'); }
+    })
+    .catch(function() { setLoading('deleteSubmitBtn', false); showToast('Network error.', 'error'); });
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(function(el) {
+    el.addEventListener('click', function(e) { if (e.target === el) el.classList.remove('show'); });
+});
+</script>
+{% endblock %}

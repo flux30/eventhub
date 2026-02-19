@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EventHub{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-calendar-check"></i>
+                <span>EventHub</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin.manage_users') }}" class="nav-item {{ 'active' if 'users' in request.endpoint else '' }}">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="{{ url_for('admin.manage_events') }}" class="nav-item {{ 'active' if 'manage_events' in request.endpoint else '' }}">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Events</span>
+                </a>
+            {% elif current_user.role == 'organizer' %}
+                <a href="{{ url_for('organizer.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'organizer.dashboard' else '' }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('organizer.my_events') }}" class="nav-item {{ 'active' if 'my_events' in request.endpoint else '' }}">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>My Events</span>
+                </a>
+                <a href="{{ url_for('organizer.create_event') }}" class="nav-item {{ 'active' if 'create_event' in request.endpoint else '' }}">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create Event</span>
+                </a>
+                <a href="{{ url_for('organizer.qr_scanner') }}" class="nav-item {{ 'active' if 'qr_scanner' in request.endpoint else '' }}">
+                    <i class="fas fa-qrcode"></i>
+                    <span>QR Scanner</span>
+                </a>
+            {% else %}
+                <a href="{{ url_for('participant.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'participant.dashboard' else '' }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('participant.browse_events') }}" class="nav-item {{ 'active' if 'browse_events' in request.endpoint else '' }}">
+                    <i class="fas fa-search"></i>
+                    <span>Browse Events</span>
+                </a>
+                <a href="{{ url_for('participant.my_registrations') }}" class="nav-item {{ 'active' if 'registrations' in request.endpoint else '' }}">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>My Tickets</span>
+                </a>
+                <a href="{{ url_for('participant.recommendations') }}" class="nav-item {{ 'active' if 'recommendations' in request.endpoint else '' }}">
+                    <i class="fas fa-star"></i>
+                    <span>Recommended</span>
+                </a>
+            {% endif %}
+        </nav>
+        
+        <div class="sidebar-footer">
+            <a href="{{ url_for('auth.profile') }}" class="nav-item {{ 'active' if 'profile' in request.endpoint else '' }}">
+                <i class="fas fa-user-circle"></i>
+                <span>Profile</span>
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <nav class="top-nav">
+            <div class="top-nav-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="page-title">{% block page_title %}Dashboard{% endblock %}</h2>
+            </div>
+            
+            <div class="top-nav-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">{{ current_user.name }}</span>
+                        <span class="user-role">{{ current_user.role|title }}</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="content-wrapper">
+{% else %}
+    <nav class="public-header">
+        <div class="container">
+            <div class="header-left">
+                <a href="{{ url_for('index') }}" class="brand">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>EventHub</span>
+                </a>
+            </div>
+            
+            <div class="header-right">
+                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="public-content">
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} animate-slide-down">
+                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'error' else 'info-circle' }}"></i>
+                    <span>{{ message }}</span>
+                    <button class="alert-close" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+{% if current_user.is_authenticated %}
+        </div>
+    </div>
+{% else %}
+    </div>
+{% endif %}
+
+<!-- Flatpickr JS loaded at bottom so DOM is ready -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    document.querySelector('.main-content').classList.toggle('expanded');
+}
+
+setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.animation = 'slideUp 0.3s ease-out';
+        setTimeout(() => alert.remove(), 300);
+    });
+}, 5000);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

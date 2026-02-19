@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Unauthorized - EventHub{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <div class="error-code">401</div>
+        <h1>Unauthorized</h1>
+        <p>Please log in to access this page.</p>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline">
+                <i class="fas fa-home"></i> Go Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+{% block title %}Profile - EventHub{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+    <!-- Page Header -->
+    <div class="profile-header">
+        <div>
+            <h1 class="profile-heading">My Profile</h1>
+            <p class="profile-sub">Manage your account settings</p>
+        </div>
+    </div>
+
+    <div class="profile-container">
+
+        <!-- ── Left Sidebar ──────────────────────── -->
+        <aside class="profile-sidebar">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    {{ current_user.name[0]|upper }}
+                </div>
+
+                <h3 class="profile-name">{{ current_user.name }}</h3>
+                <p class="profile-email">{{ current_user.email }}</p>
+
+                <span class="role-badge role-{{ current_user.role }}">
+                    <i class="fas fa-{% if current_user.role == 'admin' %}shield-alt{% elif current_user.role == 'organizer' %}calendar-alt{% else %}user{% endif %}"></i>
+                    {{ current_user.role|title }}
+                </span>
+
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <span class="stat-value">
+                            {{ current_user.created_at.strftime('%d %b %Y') if current_user.created_at else '—' }}
+                        </span>
+                        <span class="stat-label">Member since</span>
+                    </div>
+                    {% if current_user.phone %}
+                    <div class="profile-stat">
+                        <span class="stat-value">{{ current_user.phone }}</span>
+                        <span class="stat-label">Phone</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main Content ───────────────────────── -->
+        <main class="profile-main">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- Profile Information -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-user-edit"></i>
+                    <h3>Profile Information</h3>
+                </div>
+                <div class="section-card-body">
+                    <form method="POST" action="{{ url_for('auth.update_profile') }}" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name" class="form-label">Full Name <span class="req">*</span></label>
+                                <input type="text"
+                                       id="name"
+                                       name="name"
+                                       class="form-control"
+                                       value="{{ current_user.name }}"
+                                       placeholder="Your full name"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="form-label">Email Address <span class="req">*</span></label>
+                                <input type="email"
+                                       id="email"
+                                       name="email"
+                                       class="form-control"
+                                       value="{{ current_user.email }}"
+                                       placeholder="you@example.com"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel"
+                                   id="phone"
+                                   name="phone"
+                                   class="form-control"
+                                   value="{{ current_user.phone or '' }}"
+                                   placeholder="9876543210"
+                                   maxlength="15">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-lock"></i>
+                    <h3>Security</h3>
+                </div>
+                <div class="section-card-body">
+                    <div class="security-item">
+                        <div class="security-item-info">
+                            <h4>Password</h4>
+                            <p>Change your password to keep your account secure</p>
+                        </div>
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline">
+                            <i class="fas fa-key"></i> Change Password
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="section-card section-card-danger">
+                <div class="section-card-header danger-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Danger Zone</h3>
+                </div>
+                <div class="section-card-body">
+                    <div class="security-item">
+                        <div class="security-item-info">
+                            <h4>Delete Account</h4>
+                            <p>Permanently delete your account and all associated data. This cannot be undone.</p>
+                        </div>
+                        <button class="btn btn-danger" onclick="confirmDelete()">
+                            <i class="fas fa-trash-alt"></i> Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal" onclick="closeModal(event)">
+    <div class="modal-box">
+        <div class="modal-icon danger">
+            <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3 class="modal-title">Delete Your Account?</h3>
+        <p class="modal-desc">
+            This will permanently delete your account, all registrations, and event history.
+            <strong>This action cannot be undone.</strong>
+        </p>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="document.getElementById('deleteModal').style.display='none'">
+                Cancel
+            </button>
+            <form method="POST" action="{{ url_for('auth.delete_account') }}" style="margin:0">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Yes, Delete My Account
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Page ────────────────────────────────── */
+.profile-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+}
+
+.profile-header {
+    margin-bottom: 32px;
+}
+.profile-heading {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    color: var(--text-primary);
+}
+.profile-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ── Layout ──────────────────────────────── */
+.profile-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 28px;
+    align-items: start;
+}
+
+/* ── Sidebar ─────────────────────────────── */
+.profile-sidebar {
+    position: sticky;
+    top: 80px;
+}
+
+.profile-card {
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 32px 24px;
+    text-align: center;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    background: linear-gradient(135deg, #4da6ff, #a78bfa);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 800;
+    color: white;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(77,166,255,0.3);
+}
+
+.profile-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.profile-email {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+    word-break: break-all;
+}
+
+/* Role badges */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.role-admin     { background: rgba(239,68,68,0.12);   color: #ef4444;  border: 1px solid rgba(239,68,68,0.25); }
+.role-organizer { background: rgba(168,85,247,0.12);  color: #a855f7;  border: 1px solid rgba(168,85,247,0.25); }
+.role-participant{ background: rgba(77,166,255,0.12); color: #4da6ff;  border: 1px solid rgba(77,166,255,0.25); }
+
+/* Sidebar Stats */
+.profile-stats {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.profile-stat { display: flex; flex-direction: column; gap: 3px; }
+.stat-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Main ────────────────────────────────── */
+.profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* ── Alerts ──────────────────────────────── */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.alert-success { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+.alert-error   { background: rgba(239,68,68,0.1);  color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.alert-warning { background: rgba(251,146,60,0.1); color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+.alert-info    { background: rgba(77,166,255,0.1); color: #4da6ff; border: 1px solid rgba(77,166,255,0.2); }
+
+/* ── Section Cards ───────────────────────── */
+.section-card {
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.section-card-danger {
+    border-color: rgba(239,68,68,0.2);
+}
+
+.section-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.section-card-header i {
+    color: #4da6ff;
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    background: rgba(77,166,255,0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.section-card-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+.danger-header i {
+    color: #ef4444;
+    background: rgba(239,68,68,0.1);
+}
+
+.section-card-body {
+    padding: 24px 28px;
+}
+
+/* ── Forms ───────────────────────────────── */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.form-group:last-of-type { margin-bottom: 0; }
+
+.form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.req { color: #ef4444; }
+
+.form-control {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 15px;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+.form-control:focus {
+    outline: none;
+    border-color: #4da6ff;
+    box-shadow: 0 0 0 3px rgba(77,166,255,0.15);
+    background: rgba(77,166,255,0.04);
+}
+.form-control::placeholder { color: var(--text-tertiary); }
+
+.form-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ── Security Item ───────────────────────── */
+.security-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+.security-item-info h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: var(--text-primary);
+}
+.security-item-info p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ── Buttons ─────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+}
+.btn-primary {
+    background: #4da6ff;
+    color: white;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(77,166,255,0.35);
+}
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.12);
+}
+.btn-outline:hover {
+    border-color: #4da6ff;
+    color: #4da6ff;
+    background: rgba(77,166,255,0.06);
+}
+.btn-danger {
+    background: rgba(239,68,68,0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.25);
+}
+.btn-danger:hover {
+    background: rgba(239,68,68,0.2);
+    border-color: rgba(239,68,68,0.4);
+}
+
+/* ── Delete Modal ────────────────────────── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.active {
+    display: flex;
+}
+.modal-box {
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 40px 36px;
+    max-width: 440px;
+    width: calc(100% - 40px);
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+.modal-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 20px;
+}
+.modal-icon.danger {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.25);
+}
+.modal-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+}
+.modal-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+}
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 1024px) {
+    .profile-container {
+        grid-template-columns: 1fr;
+    }
+    .profile-sidebar { position: static; }
+    .profile-card { max-width: 420px; margin: 0 auto; }
+}
+
+@media (max-width: 640px) {
+    .profile-page { padding: 20px 16px 40px; }
+    .form-row { grid-template-columns: 1fr; }
+    .security-item { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .section-card-body { padding: 20px; }
+    .section-card-header { padding: 16px 20px; }
+}
+</style>
+
+<script>
+function confirmDelete() {
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeModal(event) {
+    // Close only if clicking the dark backdrop, not the box itself
+    if (event.target === document.getElementById('deleteModal')) {
+        document.getElementById('deleteModal').classList.remove('active');
+    }
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('deleteModal').classList.remove('active');
+    }
+});
+</script>
+{% endblock %}

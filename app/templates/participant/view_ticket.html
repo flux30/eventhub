@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% block title %}My Ticket - {{ registration.event.title }}{% endblock %}
+{% block page_title %}My Ticket{% endblock %}
+
+{% block content %}
+<div class="ticket-page">
+
+    <a href="{{ url_for('participant.my_registrations') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to My Registrations
+    </a>
+
+    {% if registration.status == 'cancelled' %}
+    <div class="ticket-alert cancelled">
+        <i class="fas fa-times-circle"></i>
+        This registration has been cancelled.
+    </div>
+    {% endif %}
+
+    <!-- Ticket Card -->
+    <div class="ticket-wrapper">
+        <div class="ticket-card {% if registration.attended %}ticket-used{% endif %}">
+
+            <!-- Top: Event Banner -->
+            <div class="ticket-banner">
+                {% if registration.event.image %}
+                    <div class="banner-blur"
+                         style="background-image:url('{{ url_for('static', filename='uploads/events/' + registration.event.image) }}')">
+                    </div>
+                    <img src="{{ url_for('static', filename='uploads/events/' + registration.event.image) }}"
+                         alt="{{ registration.event.title }}" class="banner-img">
+                {% else %}
+                    <div class="banner-placeholder"></div>
+                {% endif %}
+
+                <!-- Status ribbon -->
+                <div class="ticket-ribbon
+                    {% if registration.attended %}ribbon-used
+                    {% elif registration.status == 'confirmed' %}ribbon-valid
+                    {% elif registration.status == 'waitlist' %}ribbon-waitlist
+                    {% else %}ribbon-cancelled{% endif %}">
+                    {% if registration.attended %}
+                        <i class="fas fa-check-double"></i> ATTENDED
+                    {% elif registration.status == 'confirmed' %}
+                        <i class="fas fa-check-circle"></i> VALID
+                    {% elif registration.status == 'waitlist' %}
+                        <i class="fas fa-hourglass-half"></i> WAITLIST
+                    {% else %}
+                        <i class="fas fa-times-circle"></i> CANCELLED
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ticket Body -->
+            <div class="ticket-body">
+                <div class="ticket-main">
+
+                    <!-- Event Title + Category -->
+                    <div class="ticket-event-info">
+                        <span class="ticket-category">{{ registration.event.category|title }}</span>
+                        <h1 class="ticket-title">{{ registration.event.title }}</h1>
+                    </div>
+
+                    <!-- Details Row -->
+                    <div class="ticket-details">
+                        <div class="ticket-detail">
+                            <div class="detail-icon-wrap blue">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div>
+                                <span class="detail-label">Date</span>
+                                <span class="detail-val">{{ registration.event.event_date.strftime('%A, %d %B %Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-detail">
+                            <div class="detail-icon-wrap purple">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <span class="detail-label">Time</span>
+                                <span class="detail-val">{{ registration.event.event_date.strftime('%I:%M %p') }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-detail">
+                            <div class="detail-icon-wrap orange">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <span class="detail-label">Location</span>
+                                <span class="detail-val">{{ registration.event.location }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-detail">
+                            <div class="detail-icon-wrap green">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <span class="detail-label">Attendee</span>
+                                <span class="detail-val">{{ registration.user.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tear Line -->
+                    <div class="tear-line">
+                        <div class="tear-circle left"></div>
+                        <div class="tear-dashes"></div>
+                        <div class="tear-circle right"></div>
+                    </div>
+
+                    <!-- Bottom: QR + Ticket Meta -->
+                    <div class="ticket-bottom">
+                        <div class="ticket-meta">
+                            <div class="meta-row">
+                                <span class="meta-label">Ticket ID</span>
+                                <span class="meta-val">#{{ '%06d' % registration.id }}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Registered</span>
+                                <span class="meta-val">{{ registration.created_at.strftime('%d %b %Y') }}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Price</span>
+                                <span class="meta-val">
+                                    {% if registration.event.is_paid %}
+                                        ₹{{ registration.event.price|round|int }}
+                                    {% else %}
+                                        Free
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Payment</span>
+                                <span class="meta-val pay-{{ registration.payment_status or 'free' }}">
+                                    {% if not registration.event.is_paid %}
+                                        N/A
+                                    {% elif registration.payment_status == 'paid' %}
+                                        <i class="fas fa-check-circle"></i> Paid
+                                    {% else %}
+                                        <i class="fas fa-clock"></i> {{ registration.payment_status|title if registration.payment_status else 'Pending' }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Organizer</span>
+                                <span class="meta-val">{{ registration.event.organizer.name }}</span>
+                            </div>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="qr-section">
+                            {% if registration.qr_code %}
+                                <img src="{{ url_for('static', filename='uploads/qrcodes/' + registration.qr_code) }}"
+                                     alt="QR Code" class="qr-img">
+                            {% else %}
+                                <div class="qr-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>QR not generated</span>
+                                </div>
+                            {% endif %}
+                            <p class="qr-hint">Show this at the venue</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="ticket-actions">
+        {% if registration.status == 'confirmed' and not registration.attended %}
+        <button onclick="window.print()" class="action-btn btn-print">
+            <i class="fas fa-print"></i> Print Ticket
+        </button>
+        {% endif %}
+        <a href="{{ url_for('participant.event_details', event_id=registration.event.id) }}"
+           class="action-btn btn-event">
+            <i class="fas fa-calendar-alt"></i> View Event
+        </a>
+        {% if not registration.attended and registration.status == 'confirmed' %}
+        <form method="POST"
+              action="{{ url_for('participant.cancel_registration', registration_id=registration.id) }}"
+              onsubmit="return confirm('Cancel this registration?')"
+              style="display:inline">
+            <button type="submit" class="action-btn btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+.ticket-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+}
+
+.back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--text-secondary); text-decoration: none;
+    font-size: 14px; font-weight: 600; margin-bottom: 24px;
+    transition: color 0.2s;
+}
+.back-link:hover { color: var(--accent); }
+
+.ticket-alert {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; margin-bottom: 20px;
+}
+.ticket-alert.cancelled {
+    background: rgba(239,68,68,0.1); color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.25);
+}
+
+/* ── Ticket Card ─────────────────────────── */
+.ticket-wrapper { perspective: 1000px; margin-bottom: 28px; }
+
+.ticket-card {
+    background: var(--bg-elevated);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+}
+.ticket-card:hover { transform: translateY(-4px); }
+.ticket-card.ticket-used { opacity: 0.75; filter: grayscale(0.3); }
+
+/* Banner */
+.ticket-banner {
+    position: relative; height: 220px;
+    background: #060b14;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+}
+.banner-blur {
+    position: absolute; inset: -12px;
+    background-size: cover; background-position: center;
+    filter: blur(20px) brightness(0.3);
+    transform: scale(1.15); z-index: 0;
+}
+.banner-img {
+    position: relative; z-index: 1;
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto; object-fit: contain;
+}
+.banner-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1040, #0d2340);
+}
+
+/* Ribbon */
+.ticket-ribbon {
+    position: absolute; top: 16px; right: 16px; z-index: 2;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
+}
+.ribbon-valid    { background: #10b981; color: white; }
+.ribbon-used     { background: #6366f1; color: white; }
+.ribbon-waitlist { background: #fb923c; color: white; }
+.ribbon-cancelled{ background: #ef4444; color: white; }
+
+/* Ticket Body */
+.ticket-body { padding: 0; }
+.ticket-main { padding: 28px; }
+
+.ticket-event-info { margin-bottom: 24px; }
+.ticket-category {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--accent); background: rgba(77,166,255,0.1);
+    padding: 4px 12px; border-radius: 12px;
+    border: 1px solid rgba(77,166,255,0.2); margin-bottom: 10px;
+}
+.ticket-title {
+    font-size: 26px; font-weight: 800; letter-spacing: -0.5px;
+    margin: 0; line-height: 1.25; word-break: break-word;
+}
+
+/* Details */
+.ticket-details {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 24px;
+}
+.ticket-detail { display: flex; align-items: flex-start; gap: 12px; }
+.detail-icon-wrap {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+}
+.detail-icon-wrap.blue   { background: rgba(77,166,255,0.1);  color: #4da6ff; }
+.detail-icon-wrap.purple { background: rgba(168,85,247,0.1);  color: #a855f7; }
+.detail-icon-wrap.orange { background: rgba(251,146,60,0.1);  color: #fb923c; }
+.detail-icon-wrap.green  { background: rgba(16,185,129,0.1);  color: #10b981; }
+.detail-label {
+    display: block; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-tertiary); margin-bottom: 3px;
+}
+.detail-val { font-size: 14px; font-weight: 600; display: block; line-height: 1.3; }
+
+/* Tear Line */
+.tear-line {
+    display: flex; align-items: center;
+    margin: 8px -28px 24px;
+    position: relative;
+}
+.tear-circle {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    background: var(--bg-base);
+}
+.tear-circle.left  { margin-left: -12px; }
+.tear-circle.right { margin-right: -12px; }
+.tear-dashes {
+    flex: 1; border-top: 2px dashed rgba(255,255,255,0.08);
+    margin: 0 8px;
+}
+
+/* Ticket Bottom */
+.ticket-bottom {
+    display: flex; gap: 24px; align-items: flex-start;
+}
+.ticket-meta {
+    flex: 1; display: flex; flex-direction: column; gap: 12px;
+}
+.meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.meta-row:last-child { border-bottom: none; padding-bottom: 0; }
+.meta-label { color: var(--text-tertiary); font-weight: 500; }
+.meta-val   { font-weight: 700; }
+.pay-paid    { color: #10b981; }
+.pay-pending { color: #fb923c; }
+.pay-free    { color: var(--text-secondary); }
+
+/* QR */
+.qr-section {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    flex-shrink: 0;
+}
+.qr-img {
+    width: 140px; height: 140px;
+    border-radius: 12px;
+    background: white;
+    padding: 8px;
+    object-fit: contain;
+}
+.qr-placeholder {
+    width: 140px; height: 140px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 2px dashed rgba(255,255,255,0.1);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px; color: var(--text-tertiary);
+}
+.qr-placeholder i  { font-size: 36px; opacity: 0.3; }
+.qr-placeholder span { font-size: 11px; text-align: center; }
+.qr-hint { font-size: 11px; color: var(--text-tertiary); text-align: center; margin: 0; }
+
+/* ── Actions ─────────────────────────────── */
+.ticket-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.action-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    border: none; text-decoration: none; transition: all 0.2s;
+    font-family: inherit;
+}
+.btn-print {
+    background: var(--accent); color: white;
+}
+.btn-print:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(77,166,255,0.4); }
+.btn-event {
+    background: rgba(255,255,255,0.06); color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-event:hover { border-color: var(--accent); color: var(--accent); }
+.btn-cancel {
+    background: rgba(239,68,68,0.08); color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.2);
+}
+.btn-cancel:hover { background: rgba(239,68,68,0.15); }
+
+/* ── Print Styles ────────────────────────── */
+@media print {
+    .back-link, .ticket-actions { display: none; }
+    .ticket-page { padding: 0; max-width: 100%; }
+    .ticket-card { box-shadow: none; border: 1px solid #ddd; }
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 640px) {
+    .ticket-details { grid-template-columns: 1fr; }
+    .ticket-bottom  { flex-direction: column; align-items: center; }
+    .ticket-title   { font-size: 20px; }
+    .qr-img, .qr-placeholder { width: 160px; height: 160px; }
+}
+</style>
+{% endblock %}

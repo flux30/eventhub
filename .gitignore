@@ -1,0 +1,40 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environment ───────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+
+# ── Environment & Secrets (NEVER commit these) ────────────────────────────────
+.env
+firebase-credentials.json
+*.json.bak
+
+# ── Database ──────────────────────────────────────────────────────────────────
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── User Uploads (generated at runtime) ──────────────────────────────────────
+app/static/uploads/events/*
+app/static/uploads/qrcodes/*
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# ── Flask ─────────────────────────────────────────────────────────────────────
+flask_session/
+.flask_session/

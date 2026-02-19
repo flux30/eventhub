@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}My Registrations - EventHub{% endblock %}
+{% block page_title %}My Registrations{% endblock %}
+
+{% block content %}
+<div class="reg-container">
+
+    <div class="reg-header">
+        <div>
+            <h1>My Registrations</h1>
+            <p>All your event bookings in one place</p>
+        </div>
+        <a href="{{ url_for('participant.browse_events') }}" class="btn-primary-sm">
+            <i class="fas fa-search"></i> Browse More Events
+        </a>
+    </div>
+
+    {% if registrations %}
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="tab active" data-filter="all">
+            All <span class="tab-count">{{ registrations|length }}</span>
+        </button>
+        <button class="tab" data-filter="confirmed">
+            Confirmed
+            <span class="tab-count">{{ registrations|selectattr('status','equalto','confirmed')|list|length }}</span>
+        </button>
+        <button class="tab" data-filter="attended">
+            Attended
+            <span class="tab-count">{{ registrations|selectattr('attended','equalto',true)|list|length }}</span>
+        </button>
+        <button class="tab" data-filter="waitlist">
+            Waitlist
+            <span class="tab-count">{{ registrations|selectattr('status','equalto','waitlist')|list|length }}</span>
+        </button>
+        <button class="tab" data-filter="cancelled">
+            Cancelled
+            <span class="tab-count">{{ registrations|selectattr('status','equalto','cancelled')|list|length }}</span>
+        </button>
+    </div>
+
+    <div class="reg-list" id="reg-list">
+        {% for reg in registrations %}
+        <div class="reg-card" data-status="{{ reg.status }}" data-attended="{{ 'true' if reg.attended else 'false' }}">
+            <!-- Event Banner -->
+            <div class="reg-banner">
+                {% if reg.event.image %}
+                    <div class="banner-bg"
+                         style="background-image:url('{{ url_for('static', filename='uploads/events/' + reg.event.image) }}')">
+                    </div>
+                    <img src="{{ url_for('static', filename='uploads/events/' + reg.event.image) }}"
+                         alt="{{ reg.event.title }}" class="banner-img">
+                {% else %}
+                    <div class="banner-placeholder"></div>
+                {% endif %}
+            </div>
+
+            <!-- Event Info -->
+            <div class="reg-info">
+                <div class="reg-top">
+                    <div class="reg-event-meta">
+                        <span class="reg-category">{{ reg.event.category|title }}</span>
+                        <span class="reg-status-badge status-{{ reg.status }}">
+                            {% if reg.attended %}
+                                <i class="fas fa-check-double"></i> Attended
+                            {% elif reg.status == 'confirmed' %}
+                                <i class="fas fa-check-circle"></i> Confirmed
+                            {% elif reg.status == 'waitlist' %}
+                                <i class="fas fa-hourglass-half"></i> Waitlist
+                            {% elif reg.status == 'cancelled' %}
+                                <i class="fas fa-times-circle"></i> Cancelled
+                            {% else %}
+                                {{ reg.status|title }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <h3 class="reg-event-title">{{ reg.event.title }}</h3>
+                    <div class="reg-event-details">
+                        <span><i class="fas fa-calendar"></i> {{ reg.event.event_date.strftime('%d %b %Y') }}</span>
+                        <span><i class="fas fa-clock"></i> {{ reg.event.event_date.strftime('%I:%M %p') }}</span>
+                        <span><i class="fas fa-map-marker-alt"></i> {{ reg.event.location[:30] }}{% if reg.event.location|length > 30 %}...{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="reg-bottom">
+                    <div class="reg-dates">
+                        <span class="reg-date-label">Registered on</span>
+                        <span class="reg-date-val">{{ reg.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <div class="reg-price">
+                        {% if reg.event.is_paid %}
+                            <span class="price-tag">₹{{ reg.event.price|round|int }}</span>
+                            <span class="pay-status pay-{{ reg.payment_status }}">
+                                {{ reg.payment_status|title if reg.payment_status else 'Pending' }}
+                            </span>
+                        {% else %}
+                            <span class="price-tag free-tag">Free</span>
+                        {% endif %}
+                    </div>
+                    <div class="reg-actions">
+                        <a href="{{ url_for('participant.event_details', event_id=reg.event.id) }}"
+                           class="action-link">
+                            <i class="fas fa-eye"></i> View Event
+                        </a>
+                        {% if reg.qr_code and reg.status == 'confirmed' %}
+                        <a href="{{ url_for('participant.view_ticket', registration_id=reg.id) }}"
+                           class="action-link primary-link">
+                            <i class="fas fa-ticket-alt"></i> Ticket
+                        </a>
+                        {% endif %}
+                        {% if reg.status == 'confirmed' and not reg.attended %}
+                        <form method="POST"
+                              action="{{ url_for('participant.cancel_registration', registration_id=reg.id) }}"
+                              onsubmit="return confirm('Cancel registration for \'{{ reg.event.title }}\'?')"
+                              style="display:inline">
+                            <button type="submit" class="action-link danger-link">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-ticket-alt"></i></div>
+        <h3>No registrations yet</h3>
+        <p>Browse events and register to see them here</p>
+        <a href="{{ url_for('participant.browse_events') }}" class="btn-primary-sm" style="margin-top:20px">
+            <i class="fas fa-search"></i> Browse Events
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+.reg-container { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
+
+.reg-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+}
+.reg-header h1 { font-size: 32px; font-weight: 800; margin: 0 0 6px 0; }
+.reg-header p  { color: var(--text-secondary); margin: 0; }
+
+.btn-primary-sm {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; background: var(--accent); color: white;
+    border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: all 0.2s; border: none; cursor: pointer;
+}
+.btn-primary-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(77,166,255,0.35); }
+
+/* Tabs */
+.filter-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0;
+}
+.tab {
+    padding: 10px 16px; background: transparent; border: none;
+    color: var(--text-secondary); font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.2s; border-radius: 0;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-count {
+    background: rgba(255,255,255,0.08); color: var(--text-secondary);
+    padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 700;
+}
+.tab.active .tab-count { background: rgba(77,166,255,0.15); color: var(--accent); }
+
+/* Registration Cards */
+.reg-list { display: flex; flex-direction: column; gap: 16px; }
+
+.reg-card {
+    background: var(--bg-elevated); border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden; display: flex;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.reg-card:hover { border-color: rgba(77,166,255,0.15); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.reg-card.hidden { display: none; }
+
+/* Banner */
+.reg-banner {
+    width: 160px; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    background: #0a0f1a;
+    display: flex; align-items: center; justify-content: center;
+}
+.banner-bg {
+    position: absolute; inset: -8px;
+    background-size: cover; background-position: center;
+    filter: blur(12px) brightness(0.3);
+    transform: scale(1.15); z-index: 0;
+}
+.banner-img {
+    position: relative; z-index: 1;
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto; object-fit: contain;
+}
+.banner-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1040, #0d2340);
+}
+
+/* Registration Info */
+.reg-info { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.reg-top { display: flex; flex-direction: column; gap: 8px; }
+
+.reg-event-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.reg-category {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--accent); background: rgba(77,166,255,0.1);
+    padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(77,166,255,0.2);
+}
+.reg-status-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;
+    display: flex; align-items: center; gap: 5px;
+}
+.status-confirmed { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+.status-waitlist  { background: rgba(251,146,60,0.1);  color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+.status-cancelled { background: rgba(239,68,68,0.1);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.status-attended  { background: rgba(77,166,255,0.1);  color: #4da6ff; border: 1px solid rgba(77,166,255,0.2); }
+
+.reg-event-title {
+    font-size: 18px; font-weight: 700; margin: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.reg-event-details {
+    display: flex; gap: 16px; font-size: 13px;
+    color: var(--text-secondary); flex-wrap: wrap;
+}
+.reg-event-details i { color: var(--accent); margin-right: 5px; }
+
+.reg-bottom {
+    display: flex; align-items: center; gap: 20px;
+    padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+}
+.reg-dates { display: flex; flex-direction: column; gap: 2px; }
+.reg-date-label { font-size: 11px; color: var(--text-tertiary); }
+.reg-date-val   { font-size: 13px; font-weight: 600; }
+
+.reg-price { display: flex; align-items: center; gap: 8px; }
+.price-tag { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.free-tag  { color: #10b981; }
+.pay-status {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 10px;
+}
+.pay-paid     { background: rgba(16,185,129,0.1); color: #10b981; }
+.pay-pending  { background: rgba(251,146,60,0.1);  color: #fb923c; }
+.pay-unpaid   { background: rgba(239,68,68,0.1);   color: #ef4444; }
+.pay-not_required { background: rgba(77,166,255,0.1); color: #4da6ff; }
+
+.reg-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.action-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer; border: none; background: transparent;
+    color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.2s;
+}
+.action-link:hover  { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
+.primary-link       { background: rgba(77,166,255,0.1); color: var(--accent); border-color: rgba(77,166,255,0.2); }
+.primary-link:hover { background: rgba(77,166,255,0.2); }
+.danger-link        { color: #ef4444; border-color: rgba(239,68,68,0.2); }
+.danger-link:hover  { background: rgba(239,68,68,0.1); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-icon  { font-size: 56px; color: var(--text-tertiary); opacity: 0.25; margin-bottom: 20px; }
+.empty-state h3 { font-size: 22px; font-weight: 700; margin: 0 0 8px 0; }
+.empty-state p  { color: var(--text-secondary); margin: 0; }
+
+@media (max-width: 640px) {
+    .reg-card   { flex-direction: column; }
+    .reg-banner { width: 100%; height: 180px; }
+    .reg-event-title { white-space: normal; }
+    .reg-bottom { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .reg-actions { margin-left: 0; }
+}
+</style>
+
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const filter = tab.dataset.filter;
+        document.querySelectorAll('.reg-card').forEach(card => {
+            if (filter === 'all') {
+                card.classList.remove('hidden');
+            } else if (filter === 'attended') {
+                card.classList.toggle('hidden', card.dataset.attended !== 'true');
+            } else {
+                card.classList.toggle('hidden', card.dataset.status !== filter);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+
+{% block title %}EventHub - Discover Events{% endblock %}
+
+{% block content %}
+<!-- Custom cursor -->
+<div class="cursor-glow"></div>
+
+<!-- HERO -->
+<section class="hero-refined">
+    <div class="hero-ambient-blob"></div>
+    <div class="container">
+        <div class="hero-content-refined">
+            <h1 class="hero-title-refined">
+                Discover events<br>
+                worth attending
+            </h1>
+            <p class="hero-subtitle-refined">
+                Connect with communities and create lasting memories through meaningful experiences.
+            </p>
+            <div class="hero-cta-refined">
+                <a href="{{ url_for('auth.register') }}" class="btn-refined btn-primary-refined">
+                    Start exploring
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn-refined btn-outline-refined">
+                    Sign in
+                </a>
+            </div>
+            <div class="hero-proof">
+                <div class="proof-avatars">
+                    <span class="avatar-mini">A</span>
+                    <span class="avatar-mini">B</span>
+                    <span class="avatar-mini">C</span>
+                    <span class="avatar-count-mini">+997</span>
+                </div>
+                <p class="proof-text">1,000+ people discovering events</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURED EVENT (Static) -->
+<section class="featured-immersive" id="featured-event">
+    <div class="featured-bg-immersive">
+        <div class="featured-placeholder"></div>
+        <div class="featured-overlay-immersive"></div>
+        <div class="light-sweep"></div>
+    </div>
+    <div class="container">
+        <div class="featured-content-immersive">
+            <span class="featured-label">Featured event</span>
+            <h2 class="featured-title-immersive">Pune Tech Summit 2026</h2>
+            <p class="featured-desc-immersive">
+                Join the largest technology conference in Pune bringing together developers, designers, 
+                and innovators for two days of inspiring talks, workshops, and networking.
+            </p>
+            <div class="featured-info">
+                <div class="info-item">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">March 15, 2026</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Location</span>
+                    <span class="info-value">Pune Convention Centre</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Attending</span>
+                    <span class="info-value">342 people</span>
+                </div>
+            </div>
+            <div class="featured-cta">
+                <a href="{{ url_for('auth.register') }}" class="btn-refined btn-primary-refined btn-glow">
+                    Register now
+                </a>
+                <span class="featured-price-tag">₹499</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- UPCOMING EVENTS (Static) -->
+<section class="events-refined">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <h2 class="section-title-refined">Upcoming events</h2>
+                <p class="section-subtitle-refined">Curated experiences in Pune</p>
+            </div>
+            <a href="{{ url_for('auth.register') }}" class="link-refined">View all →</a>
+        </div>
+
+        <!-- Filters -->
+        <div class="discovery-filters">
+            <button class="filter-chip active" data-filter="all">All</button>
+            <button class="filter-chip" data-filter="workshop">Workshop</button>
+            <button class="filter-chip" data-filter="cultural">Cultural</button>
+            <button class="filter-chip" data-filter="sports">Sports</button>
+            <button class="filter-chip" data-filter="networking">Networking</button>
+            <button class="filter-chip" data-filter="seminar">Seminar</button>
+        </div>
+
+        <div class="events-grid-refined" id="events-grid">
+
+            <!-- Card 1 - Workshop -->
+            <article class="event-card-refined featured-card" data-category="workshop">
+                <div class="event-img-wrapper">
+                    <div class="event-img-placeholder placeholder-blue"></div>
+                    <div class="event-img-overlay"></div>
+                    <button class="bookmark-btn" aria-label="Bookmark event"><i class="far fa-heart"></i></button>
+                    <div class="event-category-badge category-workshop">Workshop</div>
+                    <div class="event-tag-live"><span class="live-indicator"></span> 87 attending</div>
+                </div>
+                <div class="event-body-refined">
+                    <span class="event-date-refined">Mar 20, 2026</span>
+                    <h3 class="event-title-refined">Full-Stack Web Development Bootcamp</h3>
+                    <p class="event-desc-refined">An intensive hands-on workshop covering React, Node.js, and modern deployment practices with industry experts.</p>
+                    <div class="event-attendees">
+                        <div class="attendee-avatars">
+                            <span class="attendee-avatar">R</span>
+                            <span class="attendee-avatar">S</span>
+                            <span class="attendee-avatar">M</span>
+                        </div>
+                        <span class="attendee-text">and 84 others registered</span>
+                    </div>
+                    <div class="event-location-refined">COEP Tech Park, Shivajinagar</div>
+                    <div class="event-actions">
+                        <span class="event-price-refined">₹299</span>
+                        <a href="{{ url_for('auth.register') }}" class="btn-refined btn-minimal-refined">Register →</a>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Card 2 - Cultural (Free) -->
+            <article class="event-card-refined" data-category="cultural">
+                <div class="event-img-wrapper">
+                    <div class="event-img-placeholder placeholder-pink"></div>
+                    <div class="event-img-overlay"></div>
+                    <button class="bookmark-btn" aria-label="Bookmark event"><i class="far fa-heart"></i></button>
+                    <div class="event-category-badge category-cultural">Cultural</div>
+                    <div class="event-tag-free">Free</div>
+                    <div class="event-tag-live"><span class="live-indicator"></span> 210 attending</div>
+                </div>
+                <div class="event-body-refined">
+                    <span class="event-date-refined">Mar 22, 2026</span>
+                    <h3 class="event-title-refined">Pune Heritage Walk & Photography</h3>
+                    <p class="event-desc-refined">Explore the rich history of Pune's old city through a guided heritage walk with photography tips from local artists.</p>
+                    <div class="event-attendees">
+                        <div class="attendee-avatars">
+                            <span class="attendee-avatar">A</span>
+                            <span class="attendee-avatar">P</span>
+                            <span class="attendee-avatar">K</span>
+                        </div>
+                        <span class="attendee-text">and 207 others registered</span>
+                    </div>
+                    <div class="event-location-refined">Shaniwar Wada, Pune</div>
+                    <div class="event-actions">
+                        <span class="event-price-refined free-tag">Free</span>
+                        <a href="{{ url_for('auth.register') }}" class="btn-refined btn-minimal-refined">Register →</a>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Card 3 - Networking -->
+            <article class="event-card-refined" data-category="networking">
+                <div class="event-img-wrapper">
+                    <div class="event-img-placeholder placeholder-yellow"></div>
+                    <div class="event-img-overlay"></div>
+                    <button class="bookmark-btn" aria-label="Bookmark event"><i class="far fa-heart"></i></button>
+                    <div class="event-category-badge category-networking">Networking</div>
+                    <div class="event-tag-live"><span class="live-indicator"></span> 55 attending</div>
+                </div>
+                <div class="event-body-refined">
+                    <span class="event-date-refined">Mar 25, 2026</span>
+                    <h3 class="event-title-refined">Startup Founders Mixer — Spring Edition</h3>
+                    <p class="event-desc-refined">Meet fellow founders, investors, and mentors in an informal networking evening with curated introductions and pitching opportunities.</p>
+                    <div class="event-attendees">
+                        <div class="attendee-avatars">
+                            <span class="attendee-avatar">N</span>
+                            <span class="attendee-avatar">V</span>
+                            <span class="attendee-avatar">T</span>
+                        </div>
+                        <span class="attendee-text">and 52 others registered</span>
+                    </div>
+                    <div class="event-location-refined">91Springboard, Baner</div>
+                    <div class="event-actions">
+                        <span class="event-price-refined">₹199</span>
+                        <a href="{{ url_for('auth.register') }}" class="btn-refined btn-minimal-refined">Register →</a>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Card 4 - Sports (Free) -->
+            <article class="event-card-refined" data-category="sports">
+                <div class="event-img-wrapper">
+                    <div class="event-img-placeholder placeholder-green"></div>
+                    <div class="event-img-overlay"></div>
+                    <button class="bookmark-btn" aria-label="Bookmark event"><i class="far fa-heart"></i></button>
+                    <div class="event-category-badge category-sports">Sports</div>
+                    <div class="event-tag-free">Free</div>
+                    <div class="event-tag-live"><span class="live-indicator"></span> 134 attending</div>
+                </div>
+                <div class="event-body-refined">
+                    <span class="event-date-refined">Mar 28, 2026</span>
+                    <h3 class="event-title-refined">Aundh Community 5K Fun Run</h3>
+                    <p class="event-desc-refined">A morning run open to all fitness levels through the scenic streets of Aundh. Complimentary breakfast and medals for all finishers.</p>
+                    <div class="event-attendees">
+                        <div class="attendee-avatars">
+                            <span class="attendee-avatar">D</span>
+                            <span class="attendee-avatar">J</span>
+                            <span class="attendee-avatar">L</span>
+                        </div>
+                        <span class="attendee-text">and 131 others registered</span>
+                    </div>
+                    <div class="event-location-refined">Aundh Park, Pune</div>
+                    <div class="event-actions">
+                        <span class="event-price-refined free-tag">Free</span>
+                        <a href="{{ url_for('auth.register') }}" class="btn-refined btn-minimal-refined">Register →</a>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Card 5 - Seminar -->
+            <article class="event-card-refined" data-category="seminar">
+                <div class="event-img-wrapper">
+                    <div class="event-img-placeholder placeholder-purple"></div>
+                    <div class="event-img-overlay"></div>
+                    <button class="bookmark-btn" aria-label="Bookmark event"><i class="far fa-heart"></i></button>
+                    <div class="event-category-badge category-seminar">Seminar</div>
+                    <div class="event-tag-live"><span class="live-indicator"></span> 61 attending</div>
+                </div>
+                <div class="event-body-refined">
+                    <span class="event-date-refined">Apr 02, 2026</span>
+                    <h3 class="event-title-refined">AI in Healthcare: Ethics & Opportunity</h3>
+                    <p class="event-desc-refined">A panel seminar exploring how artificial intelligence is transforming diagnostics, patient care, and the future of medicine in India.</p>
+                    <div class="event-attendees">
+                        <div class="attendee-avatars">
+                            <span class="attendee-avatar">G</span>
+                            <span class="attendee-avatar">H</span>
+                            <span class="attendee-avatar">I</span>
+                        </div>
+                        <span class="attendee-text">and 58 others registered</span>
+                    </div>
+                    <div class="event-location-refined">Symbiosis Institute, Viman Nagar</div>
+                    <div class="event-actions">
+                        <span class="event-price-refined">₹149</span>
+                        <a href="{{ url_for('auth.register') }}" class="btn-refined btn-minimal-refined">Register →</a>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+
+        <!-- Empty state for filters -->
+        <div class="empty-state-filter" id="empty-state" hidden>
+            <div class="empty-icon"><i class="fas fa-search"></i></div>
+            <h3>No events found</h3>
+            <p>Try adjusting your filters</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- STATS STRIP -->
+<section class="stats-strip">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-big">1,200+</span>
+                <span class="stat-label-strip">Registered users</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-big">85+</span>
+                <span class="stat-label-strip">Events hosted</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-big">12</span>
+                <span class="stat-label-strip">Categories</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-big">98%</span>
+                <span class="stat-label-strip">Satisfaction rate</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-refined">
+    <div class="features-bg-gradient"></div>
+    <div class="container">
+        <div class="features-grid-refined">
+            <div class="feature-refined">
+                <div class="feature-num">01</div>
+                <h3 class="feature-title-refined">Smart discovery</h3>
+                <p class="feature-text-refined">Find events that match your interests with intelligent recommendations and personalized suggestions.</p>
+            </div>
+            <div class="feature-refined">
+                <div class="feature-num">02</div>
+                <h3 class="feature-title-refined">Instant confirmation</h3>
+                <p class="feature-text-refined">Get digital tickets with QR codes immediately after registration for seamless entry.</p>
+            </div>
+            <div class="feature-refined">
+                <div class="feature-num">03</div>
+                <h3 class="feature-title-refined">Never miss out</h3>
+                <p class="feature-text-refined">Automated reminders and notifications keep you updated about your upcoming events.</p>
+            </div>
+            <div class="feature-refined">
+                <div class="feature-num">04</div>
+                <h3 class="feature-title-refined">Secure platform</h3>
+                <p class="feature-text-refined">Your personal data and payment information is protected with industry-standard encryption.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+body { animation: fadePage 0.6s ease; }
+@keyframes fadePage {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.cursor-glow {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(77,166,255,0.25), transparent);
+    position: fixed; pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%); opacity: 0;
+    transition: opacity 0.3s ease; filter: blur(12px);
+}
+body:hover .cursor-glow { opacity: 1; }
+
+/* HERO */
+.hero-refined {
+    min-height: 100vh; display: flex; align-items: center;
+    position: relative; overflow: hidden; padding: 140px 0 100px;
+}
+.hero-ambient-blob {
+    position: absolute; width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(77,166,255,0.15), transparent 70%);
+    top: -300px; left: -200px; filter: blur(100px);
+    animation: ambient-float 20s ease-in-out infinite;
+}
+@keyframes ambient-float {
+    0%,100% { transform: translate(0,0); }
+    50%      { transform: translate(80px,-60px); }
+}
+.hero-content-refined { text-align: center; position: relative; z-index: 1; }
+.hero-title-refined {
+    font-size: clamp(48px, 7vw, 76px); font-weight: 800;
+    letter-spacing: -3px; line-height: 1.05; margin-bottom: 32px;
+}
+.hero-subtitle-refined {
+    font-size: 20px; color: var(--text-secondary);
+    margin: 0 auto 48px; line-height: 1.8; max-width: 580px;
+}
+.hero-cta-refined {
+    display: flex; gap: 16px; justify-content: center; margin-bottom: 64px;
+}
+.btn-refined {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 14px 32px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    text-decoration: none; transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    border: none; cursor: pointer; font-family: inherit;
+}
+.btn-primary-refined { background: var(--text-primary); color: var(--bg-base); }
+.btn-primary-refined:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
+.btn-glow:hover { box-shadow: 0 0 30px rgba(77,166,255,0.4); }
+.btn-outline-refined {
+    background: transparent; color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.btn-outline-refined:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); }
+.hero-proof { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.proof-avatars { display: flex; align-items: center; }
+.avatar-mini, .avatar-count-mini {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-elevated-2); display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700;
+    border: 2px solid var(--bg-base); margin-left: -6px; color: var(--text-tertiary);
+}
+.avatar-mini:first-child { margin-left: 0; }
+.proof-text { font-size: 13px; color: var(--text-tertiary); }
+
+/* FEATURED */
+.featured-immersive {
+    position: relative; min-height: 560px; display: flex;
+    align-items: center; margin: 0 0 140px; overflow: hidden;
+}
+.featured-bg-immersive {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0;
+}
+.featured-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1040, #0d2340, #0a1628);
+}
+.featured-overlay-immersive {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(11,11,11,0.92), rgba(11,11,11,0.65));
+}
+.light-sweep {
+    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(77,166,255,0.08), transparent);
+    animation: sweep 15s ease-in-out infinite;
+}
+@keyframes sweep { 0%,100% { left: -100%; } 50% { left: 100%; } }
+.featured-content-immersive { position: relative; z-index: 1; max-width: 650px; }
+.featured-label {
+    display: inline-block; padding: 6px 14px;
+    background: rgba(77,166,255,0.12); border: 1px solid rgba(77,166,255,0.25);
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 20px;
+}
+.featured-title-immersive { font-size: 52px; font-weight: 800; letter-spacing: -2px; line-height: 1.1; margin-bottom: 20px; }
+.featured-desc-immersive { font-size: 17px; color: var(--text-secondary); margin-bottom: 36px; line-height: 1.7; }
+.featured-info { display: flex; gap: 40px; margin-bottom: 36px; }
+.info-item { display: flex; flex-direction: column; gap: 4px; }
+.info-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); font-weight: 600; }
+.info-value { font-size: 15px; font-weight: 600; }
+.featured-cta { display: flex; align-items: center; gap: 20px; }
+.featured-price-tag { font-size: 26px; font-weight: 700; }
+
+/* EVENTS */
+.events-refined { padding: 0 0 140px; }
+.section-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+.section-title-refined { font-size: 44px; font-weight: 800; letter-spacing: -2px; margin-bottom: 6px; }
+.section-subtitle-refined { font-size: 17px; color: var(--text-secondary); }
+.link-refined { color: var(--text-secondary); text-decoration: none; font-weight: 600; font-size: 15px; transition: color 0.3s; }
+.link-refined:hover { color: var(--text-primary); }
+
+/* Filters */
+.discovery-filters { display: flex; gap: 12px; margin-bottom: 48px; overflow-x: auto; }
+.filter-chip {
+    padding: 10px 20px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 30px;
+    font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.3s; font-family: inherit; white-space: nowrap;
+}
+.filter-chip:hover { border-color: rgba(255,255,255,0.2); }
+.filter-chip.active { background: var(--text-primary); color: var(--bg-base); border-color: var(--text-primary); }
+
+/* Events grid */
+.events-grid-refined {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 32px;
+}
+.featured-card { grid-column: span 2; }
+
+/* Scroll reveal */
+.event-card-refined, .feature-refined {
+    opacity: 0; transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+.event-card-refined.visible, .feature-refined.visible { opacity: 1; transform: translateY(0); }
+
+/* Event cards */
+.event-card-refined {
+    background: var(--bg-elevated); border-radius: 16px;
+    overflow: hidden; cursor: pointer;
+    transition: all 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+.event-card-refined:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+
+/* Image placeholders with gradients */
+.event-img-wrapper { position: relative; height: 260px; overflow: hidden; }
+.featured-card .event-img-wrapper { height: 360px; }
+.event-img-placeholder {
+    width: 100%; height: 100%;
+}
+.placeholder-blue   { background: linear-gradient(135deg, #0d2340, #1a3a5c, #0a4080); }
+.placeholder-pink   { background: linear-gradient(135deg, #3d1040, #6b1a5c, #9c1870); }
+.placeholder-yellow { background: linear-gradient(135deg, #3d2e00, #6b5200, #8a6a00); }
+.placeholder-green  { background: linear-gradient(135deg, #0a2e1a, #0f4d2a, #0d6e35); }
+.placeholder-purple { background: linear-gradient(135deg, #1e0a40, #34107a, #4a12aa); }
+
+.event-img-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(11,11,11,0.85));
+}
+.bookmark-btn {
+    position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+    background: rgba(11,11,11,0.6); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
+    color: white; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 16px;
+    transition: all 0.3s; z-index: 2;
+}
+.bookmark-btn:hover { transform: scale(1.1); }
+.bookmark-btn.active { color: #ef4444; }
+.event-category-badge {
+    position: absolute; top: 16px; left: 16px; padding: 6px 12px;
+    background: rgba(11,11,11,0.7); backdrop-filter: blur(10px);
+    border-radius: 16px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.category-workshop   { border-color: rgba(77,166,255,0.4);  color: #4da6ff; }
+.category-seminar    { border-color: rgba(168,85,247,0.4);  color: #a855f7; }
+.category-conference { border-color: rgba(251,146,60,0.4);  color: #fb923c; }
+.category-cultural   { border-color: rgba(236,72,153,0.4);  color: #ec4899; }
+.category-sports     { border-color: rgba(34,197,94,0.4);   color: #22c55e; }
+.category-networking { border-color: rgba(250,204,21,0.4);  color: #facc15; }
+.event-tag-free {
+    position: absolute; top: 16px; right: 60px; padding: 6px 12px;
+    background: rgba(16,185,129,0.9); border-radius: 16px;
+    font-size: 11px; font-weight: 700; color: white;
+}
+.event-tag-live {
+    position: absolute; bottom: 16px; left: 16px; padding: 7px 12px;
+    background: rgba(11,11,11,0.8); backdrop-filter: blur(10px);
+    border-radius: 16px; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+}
+.live-indicator {
+    width: 5px; height: 5px; border-radius: 50%; background: #10b981;
+    animation: pulse-live 2s ease-in-out infinite;
+}
+@keyframes pulse-live {
+    0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+    50%      { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+}
+.event-body-refined { padding: 24px; }
+.event-date-refined {
+    display: inline-block; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-tertiary); margin-bottom: 12px;
+}
+.event-title-refined { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; line-height: 1.3; }
+.event-desc-refined { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+.event-attendees { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.attendee-avatars { display: flex; }
+.attendee-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+    border: 2px solid var(--bg-elevated); margin-left: -8px;
+}
+.attendee-avatar:first-child { margin-left: 0; }
+.attendee-text { font-size: 12px; color: var(--text-tertiary); }
+.event-location-refined { font-size: 13px; color: var(--text-tertiary); margin-bottom: 20px; }
+.event-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);
+}
+.event-price-refined { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+.free-tag { font-size: 15px; color: #10b981; }
+.btn-minimal-refined {
+    color: var(--text-secondary); text-decoration: none;
+    font-weight: 600; font-size: 14px; transition: color 0.3s;
+}
+.btn-minimal-refined:hover { color: var(--accent); }
+
+/* Empty state */
+.empty-state-filter { text-align: center; padding: 80px 20px; }
+.empty-icon { font-size: 64px; color: var(--text-tertiary); opacity: 0.3; margin-bottom: 20px; }
+.empty-state-filter h3 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.empty-state-filter p { color: var(--text-secondary); }
+
+/* STATS STRIP */
+.stats-strip {
+    padding: 60px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 0;
+}
+.stats-grid {
+    display: flex; justify-content: center;
+    align-items: center; gap: 0; flex-wrap: wrap;
+}
+.stat-item { text-align: center; padding: 20px 60px; }
+.stat-big { display: block; font-size: 48px; font-weight: 800; letter-spacing: -2px; }
+.stat-label-strip { font-size: 14px; color: var(--text-tertiary); font-weight: 500; }
+.stat-divider { width: 1px; height: 60px; background: rgba(255,255,255,0.08); }
+
+/* FEATURES */
+.features-refined {
+    padding: 140px 0 180px;
+    background: var(--bg-elevated);
+    position: relative; overflow: hidden;
+}
+.features-bg-gradient {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(77,166,255,0.05), transparent 60%);
+    pointer-events: none;
+}
+.features-grid-refined {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 80px 120px; position: relative; z-index: 1;
+}
+.feature-refined { transition: all 0.35s cubic-bezier(0.4,0,0.2,1); }
+.feature-refined:hover { transform: translateY(-4px); }
+.feature-refined:hover .feature-num { color: rgba(255,255,255,0.08); }
+.feature-refined:hover .feature-title-refined { color: var(--accent); }
+.feature-num {
+    font-size: 68px; font-weight: 800; color: rgba(255,255,255,0.06);
+    line-height: 1; margin-bottom: 20px; letter-spacing: -2px;
+    transition: all 0.35s ease;
+}
+.feature-title-refined { font-size: 26px; font-weight: 700; margin-bottom: 14px; transition: color 0.35s ease; }
+.feature-text-refined { font-size: 15px; color: var(--text-secondary); line-height: 1.7; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .featured-card { grid-column: span 1; }
+    .events-grid-refined { grid-template-columns: 1fr; }
+    .features-grid-refined { grid-template-columns: 1fr; gap: 64px; }
+    .stat-item { padding: 20px 30px; }
+    .stat-divider { display: none; }
+}
+@media (max-width: 768px) {
+    .hero-cta-refined { flex-direction: column; width: 100%; max-width: 300px; margin: 0 auto 64px; }
+    .featured-info { flex-direction: column; gap: 16px; }
+    .cursor-glow { display: none; }
+    .featured-title-immersive { font-size: 36px; }
+}
+</style>
+
+<script>
+// Custom cursor
+const cursor = document.querySelector('.cursor-glow');
+if (cursor && window.matchMedia("(pointer: fine)").matches) {
+    document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+    });
+}
+
+// Featured section parallax
+const featuredEvent = document.getElementById('featured-event');
+if (featuredEvent && window.matchMedia("(pointer: fine)").matches) {
+    window.addEventListener('scroll', () => {
+        featuredEvent.style.transform = `translateY(${window.scrollY * 0.05}px)`;
+    });
+    featuredEvent.addEventListener('mousemove', (e) => {
+        const rect = featuredEvent.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        featuredEvent.style.transform = `translateY(${window.scrollY * 0.05}px) perspective(1000px) rotateY(${x * 2}deg) rotateX(${-y * 2}deg)`;
+    });
+    featuredEvent.addEventListener('mouseleave', () => {
+        featuredEvent.style.transform = `translateY(${window.scrollY * 0.05}px)`;
+    });
+}
+
+// Category filters
+const filterChips = document.querySelectorAll('.filter-chip');
+const cards = document.querySelectorAll('.event-card-refined');
+const emptyState = document.getElementById('empty-state');
+
+filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+        filterChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const filter = chip.dataset.filter;
+        let visible = 0;
+        cards.forEach(card => {
+            const show = filter === 'all' || card.dataset.category === filter;
+            card.style.display = show ? 'block' : 'none';
+            if (show) visible++;
+        });
+        if (emptyState) emptyState.hidden = visible > 0;
+    });
+});
+
+// Bookmark toggle
+document.querySelectorAll('.bookmark-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btn.classList.toggle('active');
+        const icon = btn.querySelector('i');
+        icon.classList.toggle('far');
+        icon.classList.toggle('fas');
+    });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('.event-card-refined, .feature-refined').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

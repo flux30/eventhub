@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Event banners - public read, organizer write
+    match /event_banners/{eventId}/{fileName} {
+      allow read: if true;  // Public access
+      allow write: if request.auth != null &&
+                      (request.auth.token.role == 'organizer' ||
+                       request.auth.token.role == 'admin');
+      
+      // File size limit: 5MB
+      allow write: if request.resource.size < 5 * 1024 * 1024;
+      
+      // Only images allowed
+      allow write: if request.resource.contentType.matches('image/.*');
+    }
+    
+    // Payment proofs - user-specific
+    match /payment_proofs/{userId}/{fileName} {
+      allow read: if request.auth != null &&
+                     (request.auth.uid == userId ||
+                      request.auth.token.role == 'admin');
+      
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // File size limit: 2MB
+      allow write: if request.resource.size < 2 * 1024 * 1024;
+      allow write: if request.resource.contentType.matches('image/.*');
+    }
+    
+    // User profile pictures
+    match /profiles/{userId}/{fileName} {
+      allow read: if true;  // Public profiles
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.resource.size < 1 * 1024 * 1024;
+    }
+  }
+}
